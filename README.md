@@ -7,8 +7,8 @@ A multiplayer 2D arena battle game where 2-4 players compete in intense combat u
 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/arena-warriors.git
-cd arena-warriors
+git clone https://github.com/Ching101/COMP4021-Group-Project.git
+cd COMP4021-Group-Project
 ```
 
 2. Install dependencies
