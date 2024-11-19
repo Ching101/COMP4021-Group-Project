@@ -1,0 +1,26 @@
+{
+  "bye": {
+    "name": "bye",
+    "password": "$2b$10$Sg8uTkisuI987kZOgPKka.b4eb9LZ8LHdBOEHj6w9Qpkxt4b2JfO6",
+    "gameRecord": {
+      "wins": 100,
+      "losses": 0
+    }
+  },
+  "hi": {
+    "name": "hi",
+    "password": "$2b$10$3SCxZBgHQwi3oh3Fq0XkKe7ChZeQeRq/KbMl.BefmtbuxrorGUD/K",
+    "gameRecord": {
+      "wins": 20,
+      "losses": 10
+    }
+  },
+  "test": {
+    "name": "test",
+    "password": "$2b$10$RvZzpIJoSS91tRPqU5jxMuMgWTej918I4ITtfdUZ7GrsUcdxq9dxS",
+    "gameRecord": {
+      "wins": 10,
+      "losses": 10
+    }
+  }
+}

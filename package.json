@@ -2,10 +2,10 @@
     "name": "arena-warriors",
     "version": "1.0.0",
     "description": "A multiplayer 2D arena battle game",
-    "main": "src/server/server.js",
+    "main": "server.js",
     "scripts": {
-        "start": "node src/server/server.js",
-        "dev": "nodemon src/server/server.js"
+        "start": "node server.js",
+        "dev": "nodemon server.js"
     },
     "dependencies": {
         "body-parser": "^1.20.3",
