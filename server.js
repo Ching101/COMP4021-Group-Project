@@ -13,6 +13,66 @@ app.use(express.static("public"))
 // Use the json middleware to parse JSON data
 app.use(express.json())
 
+// Create the Socket.IO server
+const { Server } = require("socket.io")
+const httpServer = require("http").createServer(app)
+
+// Create session middleware
+const sessionMiddleware = session({
+    secret: "secret_key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false,
+        maxAge: 1000 * 60 * 60 * 24
+    }
+})
+
+// Use the session middleware with Express
+app.use(sessionMiddleware)
+
+// Create Socket.IO server
+const io = new Server(httpServer)
+
+// Use session middleware with Socket.IO
+io.use((socket, next) => {
+    sessionMiddleware(socket.request, socket.request.res || {}, next)
+})
+
+// Store online users
+const onlineUsers = {}
+
+// Socket.IO connection handling
+io.on("connection", (socket) => {
+    if (!socket.request.session || !socket.request.session.user) {
+        socket.disconnect()
+        return
+    }
+
+    const user = socket.request.session.user
+    onlineUsers[user.username] = {
+        name: user.name,
+        gameRecord: user.gameRecord,
+    }
+
+    // Broadcast new user to all clients
+    io.emit("add user", JSON.stringify(user))
+    socket.emit("users", JSON.stringify(onlineUsers))
+
+    // Handle get users request
+    socket.on("get users", () => {
+        socket.emit("users", JSON.stringify(onlineUsers))
+    })
+
+    // Handle disconnect
+    socket.on("disconnect", () => {
+        if (user && user.username) {
+            delete onlineUsers[user.username]
+            io.emit("remove user", JSON.stringify(user))
+        }
+    })
+})
+
 // This helper function checks whether the text only contains word characters
 function containWordCharsOnly(text) {
     return /^\w+$/.test(text)
@@ -85,10 +145,10 @@ app.post("/signin", (req, res) => {
         }
 
         // Store user information in session
-        req.session.user = { 
-            username, 
+        req.session.user = {
+            username,
             name: users[username].name,
-            gameRecord: users[username].gameRecord
+            gameRecord: users[username].gameRecord,
         }
 
         res.json({ status: "success", user: req.session.user })
@@ -134,13 +194,13 @@ app.get("/validate", (req, res) => {
     }
 
     // Send user information
-    res.json({ 
-        status: "success", 
+    res.json({
+        status: "success",
         user: {
             username: req.session.user.username,
             name: req.session.user.name,
-            gameRecord: req.session.user.gameRecord
-        }
+            gameRecord: req.session.user.gameRecord,
+        },
     })
 })
 
@@ -184,43 +244,6 @@ app.get("/getStats/:username", (req, res) => {
             error: "Error accessing user database",
         })
     }
-})
-
-// Create the Socket.IO server
-const { Server } = require("socket.io")
-const httpServer = require("http").createServer(app)
-const io = new Server(httpServer)
-
-// Store online users
-const onlineUsers = {}
-
-// Socket.IO connection handling
-io.on("connection", (socket) => {
-    // Add user to online users if they're logged in
-    if (socket.request.session.user) {
-        const user = socket.request.session.user
-        onlineUsers[user.username] = {
-            name: user.name,
-            gameRecord: user.gameRecord
-        }
-
-        // Broadcast new user to all clients
-        io.emit("add user", JSON.stringify(user))
-    }
-
-    // Handle get users request
-    socket.on("get users", () => {
-        socket.emit("users", JSON.stringify(onlineUsers))
-    })
-
-    // Handle disconnect
-    socket.on("disconnect", () => {
-        if (socket.request.session.user) {
-            const user = socket.request.session.user
-            delete onlineUsers[user.username]
-            io.emit("remove user", JSON.stringify(user))
-        }
-    })
 })
 
 // Use a web server to listen at port 8000
