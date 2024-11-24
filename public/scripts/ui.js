@@ -63,17 +63,17 @@ const SignInForm = (function () {
         })
 
         // Add this to public/scripts/ui.js after the SignInForm initialization
-        $("#signin-overlay .auth-tab").on("click", function() {
-            const tab = $(this).data("tab");
-            
+        $("#signin-overlay .auth-tab").on("click", function () {
+            const tab = $(this).data("tab")
+
             // Update tabs
-            $(".auth-tab").removeClass("active");
-            $(this).addClass("active");
-            
+            $(".auth-tab").removeClass("active")
+            $(this).addClass("active")
+
             // Update forms
-            $(".auth-form").removeClass("active");
-            $(`#${tab}-form`).addClass("active");
-        });
+            $(".auth-form").removeClass("active")
+            $(`#${tab}-form`).addClass("active")
+        })
     }
 
     // This function shows the form
@@ -125,18 +125,19 @@ const UserPanel = (function () {
     // This function updates the user panel
     const update = function (user) {
         if (user) {
-            const wins = user.gameRecord?.wins || 0;
-            const losses = user.gameRecord?.losses || 0;
-            const totalGames = wins + losses;
-            const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+            const wins = user.gameRecord?.wins || 0
+            const losses = user.gameRecord?.losses || 0
+            const totalGames = wins + losses
+            const winRate =
+                totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0
 
-            $("#user-panel .user-name").text(user.name);
-            $("#total-games").text(totalGames);
-            $("#win-rate").text(winRate + "%");
+            $("#user-panel .user-name").text(user.name)
+            $("#total-games").text(totalGames)
+            $("#win-rate").text(winRate + "%")
         } else {
-            $("#user-panel .user-name").text("");
-            $("#total-games").text("0");
-            $("#win-rate").text("0%");
+            $("#user-panel .user-name").text("")
+            $("#total-games").text("0")
+            $("#win-rate").text("0%")
         }
     }
 
@@ -147,14 +148,14 @@ const OnlineUsersPanel = (function () {
     // This function initializes the UI
     const initialize = function () {}
 
-    const calculateWinRate = function(wins, losses) {
-        const total = wins + losses;
-        return total > 0 ? Math.round((wins / total) * 100) : 0;
+    const calculateWinRate = function (wins, losses) {
+        const total = wins + losses
+        return total > 0 ? Math.round((wins / total) * 100) : 0
     }
 
-    const formatUserStats = function(wins, losses) {
-        const winRate = calculateWinRate(wins, losses);
-        return `Wins: ${wins} | Losses: ${losses} | Win Rate: ${winRate}%`;
+    const formatUserStats = function (wins, losses) {
+        const winRate = calculateWinRate(wins, losses)
+        return `Wins: ${wins} | Losses: ${losses} | Win Rate: ${winRate}%`
     }
 
     // This function updates the online users panel
@@ -178,10 +179,12 @@ const OnlineUsersPanel = (function () {
 
             const recordSpan = $("<span></span>")
                 .addClass("user-record")
-                .text(formatUserStats(
-                    currentUser.gameRecord?.wins || 0,
-                    currentUser.gameRecord?.losses || 0
-                ))
+                .text(
+                    formatUserStats(
+                        currentUser.gameRecord?.wins || 0,
+                        currentUser.gameRecord?.losses || 0
+                    )
+                )
 
             userDiv.append(nameSpan).append(recordSpan)
             onlineUsersArea.append(userDiv)
@@ -209,15 +212,17 @@ const OnlineUsersPanel = (function () {
                 GameStats.getStats(username)
                     .then((stats) => {
                         if (stats) {
-                            recordSpan.text(formatUserStats(stats.wins, stats.losses));
+                            recordSpan.text(
+                                formatUserStats(stats.wins, stats.losses)
+                            )
                         } else {
-                            recordSpan.text("No stats available");
+                            recordSpan.text("No stats available")
                         }
                     })
                     .catch((error) => {
-                        console.error("Error fetching stats:", error.message);
-                        recordSpan.text("Error loading stats");
-                    });
+                        console.error("Error fetching stats:", error.message)
+                        recordSpan.text("Error loading stats")
+                    })
             }
         }
     }
@@ -295,30 +300,30 @@ const GameRecord = (function () {
     return { update }
 })()
 
-const VenueSelector = (function() {
-    let selectedVenue = 'forest'; // default venue
+const VenueSelector = (function () {
+    let selectedVenue = "forest" // default venue
 
-    const initialize = function() {
-        $('#venue-overlay').hide();
-        
-        $('#select-venue').on('click', () => {
-            $('#venue-overlay').fadeIn(500);
-        });
+    const initialize = function () {
+        $("#venue-overlay").hide()
 
-        $('#close-venue').on('click', () => {
-            $('#venue-overlay').fadeOut(500);
-        });
+        $("#select-venue").on("click", () => {
+            $("#venue-overlay").fadeIn(500)
+        })
 
-        $('.venue-option').on('click', function() {
-            $('.venue-option').removeClass('selected');
-            $(this).addClass('selected');
-            selectedVenue = $(this).data('venue');
-        });
-    };
+        $("#close-venue").on("click", () => {
+            $("#venue-overlay").fadeOut(500)
+        })
 
-    const getSelectedVenue = function() {
-        return selectedVenue;
-    };
+        $(".venue-option").on("click", function () {
+            $(".venue-option").removeClass("selected")
+            $(this).addClass("selected")
+            selectedVenue = $(this).data("venue")
+        })
+    }
 
-    return { initialize, getSelectedVenue };
-})();
+    const getSelectedVenue = function () {
+        return selectedVenue
+    }
+
+    return { initialize, getSelectedVenue }
+})()

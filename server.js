@@ -24,8 +24,8 @@ const sessionMiddleware = session({
     saveUninitialized: false,
     cookie: {
         secure: false,
-        maxAge: 1000 * 60 * 60 * 24
-    }
+        maxAge: 1000 * 60 * 60 * 24,
+    },
 })
 
 // Use the session middleware with Express
@@ -249,6 +249,5 @@ app.get("/getStats/:username", (req, res) => {
 // Use a web server to listen at port 8000
 httpServer.listen(8000, () => {
     console.log("The server has started...")
+    console.log("http://localhost:8000")
 })
-
-// http://localhost:8000
