@@ -8,11 +8,15 @@
         "dev": "nodemon src/server/server.js"
     },
     "dependencies": {
-        "express": "^4.17.1",
-        "socket.io": "^4.5.1",
-        "phaser": "^3.55.2"
+        "body-parser": "^1.20.3",
+        "express": "^4.21.1",
+        "phaser": "^3.55.2",
+        "socket.io": "^4.8.1"
     },
     "devDependencies": {
         "nodemon": "^2.0.15"
-    }
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
 }

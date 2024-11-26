@@ -1,19 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arena Warriors</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
-    <div id="game"></div>
-    <script src="/client/game.js"></script>
-    <script src="/client/socket.js"></script>
-</body>
+    <div class="music-toggle-container">
+        <div class="music-toggle">
+            <span class="music-label">♫</span>
+            <label class="switch">
+                <input type="checkbox">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+    <div id="main-menu">
+        <h1>Arena Warriors</h1>
+        <div id="auth-forms">
+            <div id="registration-form">
+                <h2>Register</h2>
+                <form id="reg-form">
+                    <input type="text" id="reg-username" placeholder="Choose a Username" required>
+                    <input type="password" id="reg-password" placeholder="Create a Password (min 8 chars, include numbers)" required>
+                    <button id="register-btn" type="submit">Register</button>
+                </form>
+                <p id="reg-message"></p>
+            </div>
+            <div id="login-form">
+                <h2>Login</h2>
+                <form id="login-form">
+                    <input type="text" id="login-username" placeholder="Enter Your Username" required>
+                    <input type="password" id="login-password" placeholder="Enter Your Password" required>
+                    <button id="login-btn" type="submit">Login</button>
+                </form>
+                <p id="login-message" class="error-message"></p>
+            </div>
+        </div>
+    </div>
 
+    <div id="lobby" style="display:none;">
+        <h2>Lobby</h2>
+        <div id="connected-players">
+            <h3>Connected Players:</h3>
+            <ul id="player-list"></ul>
+        </div>
+        <div id="player-preview">
+            <h3>Your Character:</h3>
+            <div id="character-model"></div>
+            <p>Wins: <span id="wins">0</span> | Losses: <span id="losses">0</span></p>
+        </div>
+        <div id="game-instructions">
+            <h3>Game Instructions</h3>
+            <p>Controls:</p>
+            <ul>
+                <li>WASD for movement</li>
+                <li>Mouse for attacking</li>
+                <li>Spacebar for jumping</li>
+            </ul>
+            <p>Victory conditions:</p>
+            <ul>
+                <li>Last player standing</li>
+                <li>Highest HP when time expires</li>
+            </ul>
+        </div>
+        <button id="start-game-btn" disabled>Start Game</button>
+        <button id="back-to-menu-btn">Back to Menu</button>
+    </div>
+
+    <div id="game-over" style="display:none;">
+        <h2>Game Over</h2>
+        <div id="result-animation" style="display:none;">
+            <img id="victory-animation" src="public/assets/gifs/victory-22-16421.gif" alt="Victory!" style="display:none;">
+            <img id="defeat-animation" src="public/assets/gifs/defeat-23-15017.gif" alt="Defeat!" style="display:none;">
+        </div>
+        <div id="final-results">
+            <h3>Your Results:</h3>
+            <p>Wins: <span id="final-wins">0</span></p>
+            <p>Losses: <span id="final-losses">0</span></p>
+            <p>Damage Dealt: <span id="damage-dealt">0</span></p>
+            <p>Power-Ups Collected: <span id="power-ups-collected">0</span></p>
+            <p>Survival Time: <span id="survival-time">0</span> seconds</p>
+        </div>
+        <h3>Rankings:</h3>
+        <ul id="rankings-list"></ul>
+        <div class="button-container">
+            <button id="play-again-btn">Play Again</button>
+            <button id="return-lobby-btn">Return to Lobby</button>
+            <button id="back-to-menu-btn-2">Back to Menu</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
 </html>
