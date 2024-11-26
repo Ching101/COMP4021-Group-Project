@@ -133,56 +133,25 @@
 
     <div id="signin-overlay" class="overlay row">
         <div class="auth-container">
-            <div class="auth-tabs">
-                <button class="auth-tab active" data-tab="signin">Sign In</button>
-                <button class="auth-tab" data-tab="register">Register</button>
-            </div>
+            <h1 class="auth-title">Arena Warriors</h1>
             
-            <div class="auth-content">
-                <form id="signin-form" class="auth-form active">
-                    <h2>Welcome Back!</h2>
-                    <p class="auth-subtitle">Sign in to continue your journey</p>
-                    
-                    <div class="input-group">
-                        <i class="material-icons">person</i>
-                        <input id="signin-username" placeholder="Username">
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="material-icons">lock</i>
-                        <input id="signin-password" type="password" placeholder="Password">
-                    </div>
-                    
-                    <button type="submit" class="auth-button">Sign In</button>
-                    <div id="signin-message" class="warning center"></div>
-                </form>
-
+            <div id="register-section">
+                <h2>Register</h2>
                 <form id="register-form" class="auth-form">
-                    <h2>Create Account</h2>
-                    <p class="auth-subtitle">Join the arena today!</p>
-                    
-                    <div class="input-group">
-                        <i class="material-icons">person</i>
-                        <input id="register-username" maxlength="10" placeholder="Choose username">
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="material-icons">badge</i>
-                        <input id="register-name" maxlength="20" placeholder="Display name">
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="material-icons">lock</i>
-                        <input id="register-password" type="password" placeholder="Password">
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="material-icons">lock_clock</i>
-                        <input id="register-confirm" type="password" placeholder="Confirm password">
-                    </div>
-                    
-                    <button type="submit" class="auth-button">Create Account</button>
+                    <input id="register-username" maxlength="10" placeholder="Choose a Username">
+                    <input id="register-password" type="password" placeholder="Create a Password (min 8 chars, include numbers)">
+                    <button type="submit" class="auth-button">Register</button>
                     <div id="register-message" class="warning center"></div>
+                </form>
+            </div>
+
+            <div id="login-section">
+                <h2>Login</h2>
+                <form id="signin-form" class="auth-form">
+                    <input id="signin-username" placeholder="Enter Your Username">
+                    <input id="signin-password" type="password" placeholder="Enter Your Password">
+                    <button type="submit" class="auth-button">Login</button>
+                    <div id="signin-message" class="warning center"></div>
                 </form>
             </div>
         </div>

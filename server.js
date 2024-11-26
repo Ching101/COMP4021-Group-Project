@@ -51,7 +51,7 @@ io.on("connection", (socket) => {
 
     const user = socket.request.session.user
     onlineUsers[user.username] = {
-        name: user.name,
+        username: user.username,
         gameRecord: user.gameRecord,
     }
 
@@ -80,10 +80,10 @@ function containWordCharsOnly(text) {
 
 // Handle the /register endpoint
 app.post("/register", (req, res) => {
-    const { username, name, password } = req.body
+    const { username, password } = req.body
 
     // Validate input
-    if (!username || !name || !password) {
+    if (!username || !password) {
         return res.json({ status: "error", error: "All fields are required" })
     }
 
@@ -109,7 +109,7 @@ app.post("/register", (req, res) => {
         // Hash password and store new user with game record
         const hash = bcrypt.hashSync(password, 10)
         users[username] = {
-            name: name,
+            username: username,
             password: hash,
             gameRecord: {
                 wins: 0,
@@ -147,7 +147,7 @@ app.post("/signin", (req, res) => {
         // Store user information in session
         req.session.user = {
             username,
-            name: users[username].name,
+            username: users[username].username,
             gameRecord: users[username].gameRecord,
         }
 
@@ -198,7 +198,6 @@ app.get("/validate", (req, res) => {
         status: "success",
         user: {
             username: req.session.user.username,
-            name: req.session.user.name,
             gameRecord: req.session.user.gameRecord,
         },
     })

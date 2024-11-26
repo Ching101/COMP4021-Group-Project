@@ -37,20 +37,11 @@ const SignInForm = (function () {
 
             // Get the input fields
             const username = $("#register-username").val().trim()
-            const name = $("#register-name").val().trim()
             const password = $("#register-password").val().trim()
-            const confirmPassword = $("#register-confirm").val().trim()
-
-            // Password and confirmation does not match
-            if (password != confirmPassword) {
-                $("#register-message").text("Passwords do not match.")
-                return
-            }
 
             // Send a register request
             Registration.register(
                 username,
-                name,
                 password,
                 () => {
                     $("#register-form").get(0).reset()
@@ -131,7 +122,7 @@ const UserPanel = (function () {
             const winRate =
                 totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0
 
-            $("#user-panel .user-name").text(user.name)
+            $("#user-panel .user-name").text(user.username)
             $("#total-games").text(totalGames)
             $("#win-rate").text(winRate + "%")
         } else {
@@ -175,7 +166,7 @@ const OnlineUsersPanel = (function () {
 
             const nameSpan = $("<span></span>")
                 .addClass("user-name")
-                .text(currentUser.name + " (You)")
+                .text(currentUser.username + " (You)")
 
             const recordSpan = $("<span></span>")
                 .addClass("user-record")
@@ -199,7 +190,7 @@ const OnlineUsersPanel = (function () {
 
                 const nameSpan = $("<span></span>")
                     .addClass("user-name")
-                    .text(onlineUsers[username].name)
+                    .text(onlineUsers[username].username)
 
                 const recordSpan = $("<span></span>")
                     .addClass("user-record")
@@ -262,7 +253,7 @@ const UI = (function () {
     // This function gets the user display
     const getUserDisplay = function (user) {
         return $("<div class='field-content row shadow'></div>").append(
-            $("<span class='user-name'>" + user.name + "</span>")
+            $("<span class='user-name'>" + user.username + "</span>")
         )
     }
 

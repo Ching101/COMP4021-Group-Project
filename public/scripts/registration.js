@@ -1,9 +1,8 @@
 const Registration = (function () {
-    const register = function (username, name, password, onSuccess, onError) {
+    const register = function (username, password, onSuccess, onError) {
         // Create user data object
         const userData = {
             username: username,
-            name: name,
             password: password,
         }
 
