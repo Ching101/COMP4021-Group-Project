@@ -22,5 +22,21 @@
       "wins": 0,
       "losses": 0
     }
+  },
+  "bye": {
+    "username": "bye",
+    "password": "$2b$10$A8Dy5Mz3jzc6E8dH56B36Or/WAok38XBcjYo06eGzVINXJEFlKQeu",
+    "gameRecord": {
+      "wins": 0,
+      "losses": 0
+    }
+  },
+  "YO": {
+    "username": "YO",
+    "password": "$2b$10$LvcnJBOuj66e5ajTCsTaGOZyZxxVvDcdgtn7Ez4Vb/QX28qqc308K",
+    "gameRecord": {
+      "wins": 0,
+      "losses": 0
+    }
   }
 }
