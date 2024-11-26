@@ -139,16 +139,6 @@ const OnlineUsersPanel = (function () {
     // This function initializes the UI
     const initialize = function () {}
 
-    const calculateWinRate = function (wins, losses) {
-        const total = wins + losses
-        return total > 0 ? Math.round((wins / total) * 100) : 0
-    }
-
-    const formatUserStats = function (wins, losses) {
-        const winRate = calculateWinRate(wins, losses)
-        return `Wins: ${wins} | Losses: ${losses} | Win Rate: ${winRate}%`
-    }
-
     // This function updates the online users panel
     const update = function (onlineUsers) {
         const onlineUsersArea = $("#online-users-area")
@@ -163,21 +153,8 @@ const OnlineUsersPanel = (function () {
                 .addClass("online-user")
                 .addClass("current-user")
                 .attr("id", "username-" + currentUser.username)
+                .text(currentUser.username)
 
-            const nameSpan = $("<span></span>")
-                .addClass("user-name")
-                .text(currentUser.username + " (You)")
-
-            const recordSpan = $("<span></span>")
-                .addClass("user-record")
-                .text(
-                    formatUserStats(
-                        currentUser.gameRecord?.wins || 0,
-                        currentUser.gameRecord?.losses || 0
-                    )
-                )
-
-            userDiv.append(nameSpan).append(recordSpan)
             onlineUsersArea.append(userDiv)
         }
 
@@ -187,33 +164,9 @@ const OnlineUsersPanel = (function () {
                 const userDiv = $("<div></div>")
                     .addClass("online-user")
                     .attr("id", "username-" + username)
+                    .text(username)
 
-                const nameSpan = $("<span></span>")
-                    .addClass("user-name")
-                    .text(onlineUsers[username].username)
-
-                const recordSpan = $("<span></span>")
-                    .addClass("user-record")
-                    .text("Loading stats...")
-
-                userDiv.append(nameSpan).append(recordSpan)
                 onlineUsersArea.append(userDiv)
-
-                // Fetch and update user stats
-                GameStats.getStats(username)
-                    .then((stats) => {
-                        if (stats) {
-                            recordSpan.text(
-                                formatUserStats(stats.wins, stats.losses)
-                            )
-                        } else {
-                            recordSpan.text("No stats available")
-                        }
-                    })
-                    .catch((error) => {
-                        console.error("Error fetching stats:", error.message)
-                        recordSpan.text("Error loading stats")
-                    })
             }
         }
     }
@@ -221,16 +174,14 @@ const OnlineUsersPanel = (function () {
     // This function adds a user in the panel
     const addUser = function (user) {
         const onlineUsersArea = $("#online-users-area")
-
-        // Find the user
         const userDiv = onlineUsersArea.find("#username-" + user.username)
 
-        // Add the user
         if (userDiv.length == 0) {
             onlineUsersArea.append(
-                $("<div id='username-" + user.username + "'></div>").append(
-                    UI.getUserDisplay(user)
-                )
+                $("<div></div>")
+                    .addClass("online-user")
+                    .attr("id", "username-" + user.username)
+                    .text(user.username)
             )
         }
     }
