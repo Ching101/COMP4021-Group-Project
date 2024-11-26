@@ -14,5 +14,13 @@
       "wins": 0,
       "losses": 0
     }
+  },
+  "YOYO": {
+    "username": "YOYO",
+    "password": "$2b$10$Z/dWxuZh1fLDORoWO0bf6uJtir6qEUitMtx38Omh/0TDOyA3dKo3S",
+    "gameRecord": {
+      "wins": 0,
+      "losses": 0
+    }
   }
 }

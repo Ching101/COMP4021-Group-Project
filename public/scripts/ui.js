@@ -217,6 +217,18 @@ const UI = (function () {
         for (const component of components) {
             component.initialize()
         }
+
+        // Add click handler for back to menu button
+        $(".menu-button").on("click", () => {
+            // Disconnect from socket
+            Socket.disconnect()
+            
+            // Hide user panel
+            UserPanel.hide()
+            
+            // Show signin form
+            SignInForm.show()
+        })
     }
 
     return { getUserDisplay, initialize }
