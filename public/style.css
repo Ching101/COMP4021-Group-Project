@@ -1,14 +1,21 @@
+@import url("https://fonts.googleapis.com/css2?family=Abel&display=swap");
 body {
     font-family: 'Open Sans', sans-serif;
     background: linear-gradient(to right, #2c3e50, #4ca1af);
     color: white;
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
     text-align: center;
     position: relative;
+    padding: 0;
+    min-width: 600px;
+    min-height: 300px;
+    height: 100vh;
+    padding: 0; 
 }
 
 #main-menu {
@@ -279,15 +286,6 @@ input:checked + .slider:before {
     box-sizing: border-box;
 }
 
-/* Basic */
-body {
-    min-width: 600px;
-    min-height: 300px;
-    height: 100vh;
-    padding: 0;
-    margin: 0;
-    background: #1a252f;
-}
 .center { text-align: center; }
 .shadow { box-shadow: 0px 0px 10px rgb(0, 0, 0, 0.4); }
 
