@@ -446,13 +446,14 @@ button.icon:active {
 	flex: 0 0 70%;
     height: 100%;
     padding: 20px;
-    background: var(--online-users-panel-background);
+    /* background: var(--online-users-panel-background); */
 }
 #online-users-area {
-    flex-grow: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
     width: 100%;
-    align-items: flex-start;
-    justify-content: start;
+    padding: 10px;
     overflow-y: auto;
 }
 
@@ -496,11 +497,13 @@ button.icon:active {
 }
 
 .online-user {
+    width: 100%;
+    min-width: 200px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px;
-    margin: 5px 0;
+    padding: 15px;
+    margin: 0;
     background: rgba(52, 73, 94, 0.8);
     border-radius: 8px;
     transition: all 0.3s ease;
@@ -811,4 +814,123 @@ button.icon:active {
 .venue-option.selected {
     border: 2px solid #3498db;
     background: rgba(52, 73, 94, 0.95);
+}
+
+/* Add new lobby styles */
+.lobby-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #1a1f24;
+    color: white;
+    padding: 20px;
+}
+
+.lobby-title {
+    font-size: 2.5em;
+    margin-bottom: 30px;
+    color: white;
+}
+
+.lobby-content {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.connected-players {
+    background: rgba(44, 62, 80, 0.6);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.player-list {
+    background: rgba(52, 73, 94, 0.8);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.character-card {
+    background: rgba(44, 62, 80, 0.8);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+
+.character-avatar {
+    width: 100px;
+    height: 100px;
+    background: white;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+}
+
+.game-instructions {
+    background: rgba(44, 62, 80, 0.8);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.instructions-title {
+    color: #2ecc71;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.controls-list {
+    /* list-style: none; */
+    padding: 0;
+    margin: 10px 0;
+}
+
+.controls-list li {
+    margin: 8px 0;
+    color: #ecf0f1;
+}
+
+.lobby-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.lobby-button {
+    padding: 12px 25px;
+    border-radius: 5px;
+    border: none;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.start-button {
+    background: #7f8c8d;
+    color: white;
+}
+
+.menu-button {
+    background: #3498db;
+    color: white;
+}
+
+.lobby-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.music-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(44, 62, 80, 0.8);
+    padding: 10px;
+    border-radius: 50%;
+    cursor: pointer;
 }

@@ -54,6 +54,8 @@ const GameStats = (function () {
                             const totalGames = stats.wins + stats.losses
                             $("#total-games").text(totalGames)
                             $("#win-rate").text(winRate + "%")
+                            $("#wins").text(stats.wins)
+                            $("#losses").text(stats.losses)
                         }
                     }
                 })

@@ -3,6 +3,14 @@
     "username": "test",
     "password": "$2b$10$NDHDWmhxv7tT7EtJOeVlee/a3LaJTV89WJg5f9J7yK2sMKiOuhn9i",
     "gameRecord": {
+      "wins": 10,
+      "losses": 0
+    }
+  },
+  "hi": {
+    "username": "hi",
+    "password": "$2b$10$DRG4wloXNH5bKOb5d3SXO.FuP7Q4GjMMoHjvoSkdME.1ngrObx2kC",
+    "gameRecord": {
       "wins": 0,
       "losses": 0
     }

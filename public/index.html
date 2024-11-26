@@ -99,109 +99,171 @@
 </html>
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Test Game</title>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="style.css" rel="stylesheet">
-</head>
-<body>
-    <div id="container" class="col">
-        <div id="main-panel" class="row">
-            <div id="online-users-panel" class="col">
-                <div id="online-users-area" class="col"></div>
-            </div>
-            <div id="game-menu-panel" class="col">
-                <h2>Game Menu</h2>
-                <button id="create-game" class="game-button">Start Game</button>
-                <button id="select-venue" class="game-button">Select Venue</button>
-                <div class="game-stats">
-                    <h3>Your Stats</h3>
-                    <div class="stat-row">
-                        <span>Total Games:</span>
-                        <span id="total-games">0</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>Win Rate:</span>
-                        <span id="win-rate">0%</span>
+    <head>
+        <title>Test Game</title>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <link
+            href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet"
+        />
+        <link href="style.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="lobby-container">
+            <h1 class="lobby-title">Lobby</h1>
+
+            <div class="lobby-content">
+                <div class="connected-players">
+                    <h2>Connected Players:</h2>
+                    <div id="online-users-panel" class="col">
+                        <div id="online-users-area" class="col"></div>
                     </div>
                 </div>
-                <button id="signout-button" class="game-button">logout</span></button>
-            </div>
-        </div>
-    </div>
 
-    <div id="signin-overlay" class="overlay row">
-        <div class="auth-container">
-            <h1 class="auth-title">Arena Warriors</h1>
-            
-            <div id="register-section">
-                <h2>Register</h2>
-                <form id="register-form" class="auth-form">
-                    <input id="register-username" maxlength="10" placeholder="Choose a Username">
-                    <input id="register-password" type="password" placeholder="Create a Password (min 8 chars, include numbers)">
-                    <button type="submit" class="auth-button">Register</button>
-                    <div id="register-message" class="warning center"></div>
-                </form>
-            </div>
+                <div class="character-card">
+                    <h2>Your Character:</h2>
+                    <div class="character-avatar"></div>
+                    <div class="game-stats">
+                        <div class="stat-row">
+                            <span>Wins:</span>
+                            <span id="wins">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Losses:</span>
+                            <span id="losses">0</span>
+                        </div>
+                    </div>
+                </div>
 
-            <div id="login-section">
-                <h2>Login</h2>
-                <form id="signin-form" class="auth-form">
-                    <input id="signin-username" placeholder="Enter Your Username">
-                    <input id="signin-password" type="password" placeholder="Enter Your Password">
-                    <button type="submit" class="auth-button">Login</button>
-                    <div id="signin-message" class="warning center"></div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <div id="venue-overlay" class="overlay row">
-        <div class="venue-container">
-            <h2>Select Battle Arena</h2>
-            <div class="venue-grid">
-                <div class="venue-option" data-venue="forest">
-                    <img src="assets/background/2d-pvp-arena-1-pixel-1.png" alt="Arena 1">
-                    <span>Arena 1</span>
+                <div class="game-instructions">
+                    <h3 class="instructions-title">Game Instructions</h3>
+                    <p>Controls:</p>
+                    <ul class="controls-list">
+                        <li>WASD for movement</li>
+                        <li>Mouse for attacking</li>
+                        <li>Spacebar for jumping</li>
+                    </ul>
+                    <p>Victory conditions:</p>
+                    <ul class="controls-list">
+                        <li>Last player standing</li>
+                        <li>Highest HP when time expires</li>
+                    </ul>
                 </div>
-                <div class="venue-option" data-venue="desert">
-                    <img src="assets/background/2d-pvp-arena-2-pixel.png" alt="Arena 2">
-                    <span>Arena 2</span>
-                </div>
-                <div class="venue-option" data-venue="castle">
-                    <img src="assets/background/2d-pvp-arena-3-pixel.png" alt="Arena 3">
-                    <span>Arena 3</span>
+
+                <div class="lobby-buttons">
+                    <button class="lobby-button start-button">
+                        Start Game
+                    </button>
+                    <button class="lobby-button menu-button">
+                        Back to Menu
+                    </button>
                 </div>
             </div>
-            <button id="close-venue" class="auth-button">Close</button>
+
+            <div class="music-toggle">
+                <span class="material-icons">music_note</span>
+            </div>
         </div>
-    </div>
 
-    <script src="/socket.io/socket.io.min.js"></script>
-    <script src="scripts/socket.js"></script>
-    <script src="scripts/ui.js"></script>
-    <script src="scripts/registration.js"></script>
-    <script src="scripts/authentication.js"></script>
-    <script src="scripts/game.js"></script>
-    <script src="scripts/gameStats.js"></script>
+        <div id="signin-overlay" class="overlay row">
+            <div class="auth-container">
+                <h1 class="auth-title">Arena Warriors</h1>
 
-    <script>
-    $(function() {
-        // Initialize the UI
-        UI.initialize();
-        VenueSelector.initialize();
+                <div id="register-section">
+                    <h2>Register</h2>
+                    <form id="register-form" class="auth-form">
+                        <input
+                            id="register-username"
+                            maxlength="10"
+                            placeholder="Choose a Username"
+                        />
+                        <input
+                            id="register-password"
+                            type="password"
+                            placeholder="Create a Password (min 8 chars, include numbers)"
+                        />
+                        <button type="submit" class="auth-button">
+                            Register
+                        </button>
+                        <div id="register-message" class="warning center"></div>
+                    </form>
+                </div>
 
-        // Validate the signin
-        Authentication.validate(
-            () => {
-                SignInForm.hide();
-                UserPanel.update(Authentication.getUser());
-                UserPanel.show();
-                Socket.connect();
-            },
-            () => { SignInForm.show(); }
-        );
-    });
-    </script>
-</body>
+                <div id="login-section">
+                    <h2>Login</h2>
+                    <form id="signin-form" class="auth-form">
+                        <input
+                            id="signin-username"
+                            placeholder="Enter Your Username"
+                        />
+                        <input
+                            id="signin-password"
+                            type="password"
+                            placeholder="Enter Your Password"
+                        />
+                        <button type="submit" class="auth-button">Login</button>
+                        <div id="signin-message" class="warning center"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div id="venue-overlay" class="overlay row">
+            <div class="venue-container">
+                <h2>Select Battle Arena</h2>
+                <div class="venue-grid">
+                    <div class="venue-option" data-venue="forest">
+                        <img
+                            src="assets/background/2d-pvp-arena-1-pixel-1.png"
+                            alt="Arena 1"
+                        />
+                        <span>Arena 1</span>
+                    </div>
+                    <div class="venue-option" data-venue="desert">
+                        <img
+                            src="assets/background/2d-pvp-arena-2-pixel.png"
+                            alt="Arena 2"
+                        />
+                        <span>Arena 2</span>
+                    </div>
+                    <div class="venue-option" data-venue="castle">
+                        <img
+                            src="assets/background/2d-pvp-arena-3-pixel.png"
+                            alt="Arena 3"
+                        />
+                        <span>Arena 3</span>
+                    </div>
+                </div>
+                <button id="close-venue" class="auth-button">Close</button>
+            </div>
+        </div>
+
+        <script src="/socket.io/socket.io.min.js"></script>
+        <script src="scripts/socket.js"></script>
+        <script src="scripts/ui.js"></script>
+        <script src="scripts/registration.js"></script>
+        <script src="scripts/authentication.js"></script>
+        <script src="scripts/game.js"></script>
+        <script src="scripts/gameStats.js"></script>
+
+        <script>
+            $(function () {
+                // Initialize the UI
+                UI.initialize()
+                VenueSelector.initialize()
+
+                // Validate the signin
+                Authentication.validate(
+                    () => {
+                        SignInForm.hide()
+                        UserPanel.update(Authentication.getUser())
+                        UserPanel.show()
+                        Socket.connect()
+                    },
+                    () => {
+                        SignInForm.show()
+                    }
+                )
+            })
+        </script>
+    </body>
 </html>
