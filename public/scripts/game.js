@@ -1,3 +1,15 @@
+
+let otherPlayers = new Map();
+
+function updateOtherPlayer(playerData) {
+    const otherPlayer = otherPlayers.get(playerData.id);
+    if (otherPlayer) {
+        otherPlayer.x = playerData.x;
+        otherPlayer.y = playerData.y;
+        otherPlayer.currentWeapon = playerData.currentWeapon;
+    }
+}
+
 const config = {
     type: Phaser.AUTO,
     parent: 'game',
@@ -75,6 +87,52 @@ const POWERUPS = {
 
 let platforms;
 let debugText;
+
+// Game networking
+let gameSocket = null;
+
+function initializeMultiplayer() {
+    gameSocket = io();
+
+    // Connection events
+    gameSocket.on('connect', () => {
+        console.log('Connected to game server');
+        gameSocket.emit('join_game', {
+            roomId: getRoomIdFromURL(),
+            player: {
+                id: generatePlayerId(),
+                x: player.x,
+                y: player.y,
+                currentWeapon: currentWeapon
+            }
+        });
+    });
+
+    // Game events
+    gameSocket.on('player_joined', (data) => {
+        addOtherPlayer(data.player);
+    });
+
+    gameSocket.on('player_left', (data) => {
+        removeOtherPlayer(data.playerId);
+    });
+
+    gameSocket.on('player_update', (data) => {
+        updateOtherPlayer(data.player);
+    });
+
+    gameSocket.on('game_start', () => {
+        startGame();
+    });
+
+    gameSocket.on('player_attack', (data) => {
+        handleOtherPlayerAttack(data);
+    });
+
+    gameSocket.on('damage_dealt', (data) => {
+        handleDamage(data);
+    });
+}
 
 function preload() {
     this.load.on('loaderror', function (file) {
@@ -236,56 +294,59 @@ function create() {
 }
 
 function update() {
+    if (!player || !gameSocket) return;
     const baseSpeed = 160;
     const currentSpeed = baseSpeed * (player.speedMultiplier || 1);
 
+    // Handle existing player movement and controls
     if (cursors.left.isDown) {
         player.setVelocityX(-currentSpeed);
-        player.setFlipX(true);     // Flip sprite to face left
-        player.direction = 'left';  // Track direction
+        player.direction = 'left';
     } else if (cursors.right.isDown) {
         player.setVelocityX(currentSpeed);
-        player.setFlipX(false);    // Normal sprite facing right
-        player.direction = 'right'; // Track direction
+        player.direction = 'right';
     } else {
         player.setVelocityX(0);
     }
 
-    // Handle jumping with stronger initial velocity
     if (cursors.up.isDown && player.body.touching.down) {
-        player.setVelocityY(-500);  // Increased from -330 to -500 to match higher gravity
+        player.setVelocityY(-500);
     }
 
-    // Update health bar position
-    updateHealthBar.call(this);
+    // Send player updates to server
+    gameSocket.emit('player_update', {
+        id: player.id,
+        x: player.x,
+        y: player.y,
+        currentWeapon: currentWeapon,
+        health: player.health,
+        velocity: {
+            x: player.body.velocity.x,
+            y: player.body.velocity.y
+        }
+    });
 
-    // Update debug text
-    debugText.setText([
-        '=== Player Info ===',
-        `Position: (${Math.floor(player.x)}, ${Math.floor(player.y)})`,
-        `Velocity: (${Math.floor(player.body.velocity.x)}, ${Math.floor(player.body.velocity.y)})`,
-        `Health: ${player.health}`,
-        `On Ground: ${player.body.touching.down}`,
-        '',
-        '=== Weapon Info ===',
-        `Current Weapon: ${currentWeapon ? currentWeapon.name : 'None'}`,
-        currentWeapon ? `Damage: ${currentWeapon.damage}` : '',
-        '',
-        '=== Power-ups ===',
-        `Speed Multiplier: ${player.speedMultiplier || 1}x`,
-        `Attack Multiplier: ${player.attackMultiplier || 1}x`,
-        '',
-        '=== Controls ===',
-        'AS - Move',
-        'SPACE - Jump',
-        'Click - Attack',
-        'E - Throw (Dagger only)',
-        `Facing: ${player.direction || 'right'}`,
-    ].join('\n'));
+    // Update other players' positions with interpolation
+    otherPlayers.forEach((otherPlayer) => {
+        if (otherPlayer.targetX !== undefined) {
+            otherPlayer.x = Phaser.Math.Linear(otherPlayer.x, otherPlayer.targetX, 0.3);
+            otherPlayer.y = Phaser.Math.Linear(otherPlayer.y, otherPlayer.targetY, 0.3);
+
+            // Update weapon position for other players
+            if (otherPlayer.currentWeapon) {
+                otherPlayer.currentWeapon.x = otherPlayer.x;
+                otherPlayer.currentWeapon.y = otherPlayer.y;
+            }
+        }
+    });
 
     // Add this new section to handle throwing
     if (cursors.throw.isDown && currentWeapon && currentWeapon.name === 'dagger') {
         throwDagger.call(this);
+    }
+    if (currentWeapon) {
+        currentWeapon.x = player.x;
+        currentWeapon.y = player.y;
     }
 }
 
