@@ -229,6 +229,8 @@ const UI = (function () {
             // Show signin form
             SignInForm.show()
         })
+
+        initializeInstructionsPopup()
     }
 
     return { getUserDisplay, initialize }
@@ -281,3 +283,23 @@ const VenueSelector = (function () {
 
     return { initialize, getSelectedVenue }
 })()
+
+const initializeInstructionsPopup = function() {
+    const popup = document.getElementById('instructions-popup');
+    const btn = document.getElementById('instructions-btn');
+    const closeBtn = document.querySelector('.close-popup');
+
+    btn.onclick = function() {
+        popup.style.display = "block";
+    }
+
+    closeBtn.onclick = function() {
+        popup.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == popup) {
+            popup.style.display = "none";
+        }
+    }
+}
