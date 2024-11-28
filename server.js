@@ -250,37 +250,3 @@ httpServer.listen(8000, () => {
     console.log("The server has started...")
     console.log("http://localhost:8000")
 })
-
-const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 8000 });
-
-const rooms = new Map();
-const players = new Map();
-
-wss.on('connection', (ws) => {
-    const playerId = generatePlayerId();
-    players.set(ws, { id: playerId, room: null });
-
-    ws.on('message', (message) => {
-        const data = JSON.parse(message);
-        handleMessage(ws, data);
-    });
-
-    ws.on('close', () => {
-        handlePlayerDisconnect(ws);
-    });
-});
-
-function handleMessage(ws, data) {
-    switch (data.type) {
-        case 'join_room':
-            handleJoinRoom(ws, data.roomId);
-            break;
-        case 'player_update':
-            broadcastToRoom(ws, data);
-            break;
-        case 'start_game':
-            startGame(data.roomId);
-            break;
-    }
-}

@@ -1,4 +1,3 @@
-
 let otherPlayers = new Map();
 
 function updateOtherPlayer(playerData) {
@@ -29,12 +28,11 @@ const config = {
     }
 };
 
-const game = new Phaser.Game(config);
-
 // Game state variables
 let player;
 let healthBar;
 let cursors;
+let wasdKeys;
 let weapons = [];
 let powerups = [];
 let gameTimer;
@@ -65,23 +63,34 @@ const WEAPONS = {
     }
 };
 
+// Create powerup sprites
+const powerupGraphics = {
+    health: 'health_potion',
+    attack: 'attack_boost',
+    speed: 'speed_boost'
+};
+
+// Update POWERUPS configuration
 const POWERUPS = {
     HEALTH: {
         name: 'health',
-        effect: 20,  // HP to restore
-        color: 0xff0000  // Red
+        effect: 20,
+        sprite: 'health_potion',
+        scale: 1
     },
     ATTACK: {
         name: 'attack',
         multiplier: 2,
-        duration: 10000, // 10 seconds
-        color: 0xff6b00  // Orange
+        duration: 10000,
+        sprite: 'attack_boost',
+        scale: 1
     },
     SPEED: {
         name: 'speed',
         multiplier: 1.5,
-        duration: 8000,  // 8 seconds
-        color: 0x00ff00  // Green
+        duration: 8000,
+        sprite: 'speed_boost',
+        scale: 1
     }
 };
 
@@ -91,46 +100,48 @@ let debugText;
 // Game networking
 let gameSocket = null;
 
+// Add spawn points array at the top of game.js
+const SPAWN_POINTS = [
+    { x: 100, y: 300 },  // Left side
+    { x: 700, y: 300 },  // Right side
+    { x: 400, y: 100 },  // Top middle
+    { x: 400, y: 500 }   // Bottom middle
+];
+
 function initializeMultiplayer() {
     gameSocket = io();
 
-    // Connection events
+    // Hide game screen initially
+    $('#game').hide();
+
     gameSocket.on('connect', () => {
         console.log('Connected to game server');
+        const playerId = generatePlayerId();
+        player.playerId = playerId;
+
+        const spawnPoint = SPAWN_POINTS[otherPlayers.size] || SPAWN_POINTS[0];
+
         gameSocket.emit('join_game', {
             roomId: getRoomIdFromURL(),
             player: {
-                id: generatePlayerId(),
-                x: player.x,
-                y: player.y,
-                currentWeapon: currentWeapon
+                id: playerId,
+                username: `Player${Math.floor(Math.random() * 1000)}`,
+                x: spawnPoint.x,
+                y: spawnPoint.y,
+                currentWeapon: currentWeapon,
+                health: 100
             }
         });
     });
 
-    // Game events
-    gameSocket.on('player_joined', (data) => {
-        addOtherPlayer(data.player);
-    });
-
-    gameSocket.on('player_left', (data) => {
-        removeOtherPlayer(data.playerId);
-    });
-
-    gameSocket.on('player_update', (data) => {
-        updateOtherPlayer(data.player);
-    });
-
     gameSocket.on('game_start', () => {
-        startGame();
-    });
-
-    gameSocket.on('player_attack', (data) => {
-        handleOtherPlayerAttack(data);
-    });
-
-    gameSocket.on('damage_dealt', (data) => {
-        handleDamage(data);
+        console.log('Game starting!');
+        // Only start the game if the start button was clicked
+        if (Socket.isGameStarted()) {
+            $('#game').show();
+            startGame();
+            startItemSpawning.call(this);
+        }
     });
 }
 
@@ -139,31 +150,25 @@ function preload() {
         console.error('Error loading file:', file.src);
     });
 
-    this.load.image('background', './assets/background/2d-pvp-arena-2-pixel.png');
+    this.load.image('background', 'assets/background/2d-pvp-arena-1-pixel-1.png');
 
-    // Create a temporary texture for our shapes
+    // Load weapon sprites
+    this.load.image('dagger', 'assets/weapons/daggers.png');
+    this.load.image('sword', 'assets/weapons/sword.png');
+    this.load.image('bow', 'assets/weapons/bow.png');
+
+    // Load powerup sprites
+    this.load.image('health_potion', 'assets/powerups/health.png');
+    this.load.image('attack_boost', 'assets/powerups/attack.png');
+    this.load.image('speed_boost', 'assets/powerups/speed.png');
+
+    // Keep powerup graphics as shapes for now
     const graphics = this.add.graphics();
 
     // Player (green rectangle)
     graphics.fillStyle(0x00ff00);
     graphics.fillRect(0, 0, 32, 48);
     graphics.generateTexture('player', 32, 48);
-
-    // Weapons
-    graphics.clear();
-    graphics.fillStyle(0xffff00);
-    graphics.fillRect(0, 0, 20, 8);
-    graphics.generateTexture('dagger', 20, 8);
-
-    graphics.clear();
-    graphics.fillStyle(0xff0000);
-    graphics.fillRect(0, 0, 30, 10);
-    graphics.generateTexture('sword', 30, 10);
-
-    graphics.clear();
-    graphics.fillStyle(0x800080);
-    graphics.fillRect(0, 0, 25, 15);
-    graphics.generateTexture('bow', 25, 15);
 
     graphics.clear();
     graphics.fillStyle(0x800080);
@@ -192,23 +197,23 @@ function preload() {
     graphics.generateTexture('ground', 800, 64);
 
     graphics.destroy();
+
+    // Load character spritesheet
+    this.load.spritesheet('player1',
+        'assets/characters/Player1/right/Run/Bare/8.png',
+        {
+            frameWidth: 32,  // Width of each frame
+            frameHeight: 48  // Height of each frame
+        }
+    );
 }
 
 function create() {
-    // Create gradient background
-    const background = this.add.graphics();
+    // Add the background image
+    const background = this.add.image(400, 300, 'background');
 
-    // Create gradient from dark blue to light blue
-    background.fillGradientStyle(
-        0x1a1a2e,  // Dark blue at top
-        0x1a1a2e,  // Dark blue at top
-        0x16213e,  // Slightly lighter blue at bottom
-        0x16213e,  // Slightly lighter blue at bottom
-        1          // Alpha (opacity)
-    );
-
-    // Fill the entire game area
-    background.fillRect(0, 0, 800, 600);
+    // Scale the background to fit the game width and height
+    background.setDisplaySize(800, 600);
 
     // Make sure background is behind everything
     background.setDepth(-1);
@@ -250,7 +255,7 @@ function create() {
     player = this.physics.add.sprite(400, 300, 'player');
     player.setCollideWorldBounds(true);
     player.health = 100;
-    player.direction = 'right';  // Default direction
+    player.direction = 1; // 1 for right, -1 for left
 
     // Add collision between player and ground
     this.physics.add.collider(player, platforms);
@@ -291,6 +296,27 @@ function create() {
     });
     debugText.setScrollFactor(0);  // Make it stay on screen
     debugText.setDepth(1000);      // Make sure it's always visible
+
+    // Initialize multiplayer
+    startGame();
+
+    // Setup powerup spawning
+    this.time.addEvent({
+        delay: 10000, // Spawn every 10 seconds
+        callback: () => {
+            const x = Phaser.Math.Between(50, 750);
+            const y = 0;
+            const powerupTypes = Object.values(POWERUPS);
+            const randomType = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
+            spawnPowerup.call(this, x, y, randomType);
+        },
+        loop: true
+    });
+
+    // Add multiplayer event listeners
+    gameSocket.on('player_joined', handlePlayerJoined.bind(this));
+    gameSocket.on('player_left', handlePlayerLeft.bind(this));
+    gameSocket.on('player_state', updateOtherPlayer);
 }
 
 function update() {
@@ -301,10 +327,12 @@ function update() {
     // Handle existing player movement and controls
     if (cursors.left.isDown) {
         player.setVelocityX(-currentSpeed);
-        player.direction = 'left';
+        player.direction = -1;
+        player.setFlipX(true);
     } else if (cursors.right.isDown) {
         player.setVelocityX(currentSpeed);
-        player.direction = 'right';
+        player.direction = 1;
+        player.setFlipX(false);
     } else {
         player.setVelocityX(0);
     }
@@ -347,6 +375,18 @@ function update() {
     if (currentWeapon) {
         currentWeapon.x = player.x;
         currentWeapon.y = player.y;
+    }
+
+    // Send player state to server
+    if (gameSocket) {
+        gameSocket.emit('player_update', {
+            roomId: getRoomIdFromURL(),
+            id: player.playerId,
+            x: player.x,
+            y: player.y,
+            currentWeapon: currentWeapon,
+            health: player.health
+        });
     }
 }
 
@@ -472,48 +512,81 @@ function collectWeapon(player, weapon) {
 }
 
 function spawnPowerup() {
-    const powerupTypes = ['HEALTH', 'ATTACK', 'SPEED'];
+    // Get random powerup type from POWERUPS object
+    const powerupTypes = Object.keys(POWERUPS);
     const randomType = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
     const powerupConfig = POWERUPS[randomType];
 
+    // Random position
     const x = Phaser.Math.Between(50, 750);
-    const y = Phaser.Math.Between(50, 500);
+    const y = Phaser.Math.Between(50, 550);
 
-    const powerup = this.physics.add.sprite(x, y, `powerup_${powerupConfig.name}`);
-    powerup.type = powerupConfig;
+    // Create powerup sprite
+    const powerup = this.physics.add.sprite(x, y, powerupConfig.sprite);
+    powerup.powerupType = randomType;
+    powerup.setScale(powerupConfig.scale);
+
+    // Add a gentle floating animation
+    this.tweens.add({
+        targets: powerup,
+        y: y - 10
+    });
+
+    // Add collision with platforms
+    this.physics.add.collider(powerup, platforms);
 
     // Add collision with player
     this.physics.add.overlap(player, powerup, collectPowerup, null, this);
 
-    // Add collision with ground
-    this.physics.add.collider(powerup, platforms);
+    // Add to powerups array
+    powerups.push(powerup);
+
+    return powerup;
 }
 
 function collectPowerup(player, powerup) {
-    const type = powerup.type;
+    if (!powerup.powerupType) return; // Guard clause for undefined powerupType
+
+    const type = POWERUPS[powerup.powerupType];
+    if (!type) return; // Guard clause for invalid powerup type
 
     switch (type.name) {
         case 'health':
             player.health = Math.min(player.health + type.effect, 100);
-            updateHealthBar.call(this);
+            updateHealthBar();
             break;
         case 'attack':
-            player.attackMultiplier = (player.attackMultiplier || 1) * type.multiplier;
+            player.damageMultiplier = (player.damageMultiplier || 1) * type.multiplier;
             this.time.delayedCall(type.duration, () => {
-                player.attackMultiplier = (player.attackMultiplier || 2) / type.multiplier;
+                player.damageMultiplier = 1;
             });
             break;
         case 'speed':
             player.speedMultiplier = (player.speedMultiplier || 1) * type.multiplier;
             this.time.delayedCall(type.duration, () => {
-                player.speedMultiplier = (player.speedMultiplier || 1.5) / type.multiplier;
+                player.speedMultiplier = 1;
             });
             break;
     }
 
-    powerup.destroy();
+    // Add floating text effect
+    const effectText = this.add.text(player.x, player.y - 50,
+        `${type.name.toUpperCase()} BOOST!`, {
+        fontSize: '20px',
+        fill: '#fff',
+        stroke: '#000',
+        strokeThickness: 4
+    }).setOrigin(0.5);
 
-    console.log(`Collected powerup: ${powerup.type.name}`);  // Debug log
+    this.tweens.add({
+        targets: effectText,
+        y: effectText.y - 30,
+        alpha: 0,
+        duration: 1000,
+        onComplete: () => effectText.destroy()
+    });
+
+    powerup.destroy();
 }
 
 function endMatch() {
@@ -521,18 +594,31 @@ function endMatch() {
 }
 
 function meleeAttack(damage, range) {
-    // Create attack hitbox
-    const direction = player.flipX ? -1 : 1;
+    // Calculate angle between player and cursor
+    const pointer = this.input.activePointer;
+    const angle = Phaser.Math.Angle.Between(
+        player.x, player.y,
+        pointer.worldX, pointer.worldY
+    );
+
+    // Create attack hitbox at the calculated angle
+    const hitboxX = player.x + Math.cos(angle) * (range / 2);
+    const hitboxY = player.y + Math.sin(angle) * (range / 2);
+
     const hitbox = this.add.rectangle(
-        player.x + (range * direction),
-        player.y,
+        hitboxX,
+        hitboxY,
         range,
         40,
         0xff0000,
         0.2
     );
 
-    // Check for hits on other players (will be implemented with multiplayer)
+    // Set hitbox rotation to match attack direction
+    hitbox.rotation = angle;
+
+    // Flip player sprite based on cursor position
+    player.setFlipX(pointer.worldX < player.x);
 
     // Remove hitbox after brief moment
     this.time.delayedCall(100, () => hitbox.destroy());
@@ -844,3 +930,61 @@ const CheatMode = (function () {
 document.addEventListener("DOMContentLoaded", () => {
     CheatMode.initialize()
 })
+
+// Initialize multiplayer when game starts
+function startGame() {
+    if (!gameSocket) {
+        initializeMultiplayer();
+    }
+
+    // Hide lobby and show game
+    $('.lobby-container').hide();
+    $('#game').show();
+
+    // Initialize game state
+    player.health = 100;
+    updateHealthBar();
+
+    // Start spawning items
+    startItemSpawning();
+
+    // Start match timer (3 minutes)
+    gameTimer = this.time.addEvent({
+        delay: 180000,
+        callback: endMatch,
+        callbackScope: this
+    });
+}
+
+function generatePlayerId() {
+    return 'player_' + Math.random().toString(36).substr(2, 9);
+}
+
+function updateRoomDisplay(roomData) {
+    $('#player-list').empty();
+    roomData.players.forEach(player => {
+        const highlightClass = (player.username === currentPlayer) ? 'highlight' : '';
+        $('#player-list').append(
+            `<li>${highlightClass ? `<span class="${highlightClass}">${player.username}</span>` : player.username}</li>`
+        );
+    });
+}
+
+function handlePlayerJoined(playerData) {
+    console.log('Player joined:', playerData);
+    const otherPlayer = this.add.sprite(playerData.x, playerData.y, 'player');
+    otherPlayer.id = playerData.id;
+    otherPlayer.setTint(0xff0000); // Make other players red to distinguish them
+    this.physics.add.existing(otherPlayer);
+    otherPlayer.body.setCollideWorldBounds(true);
+    this.physics.add.collider(otherPlayer, platforms);
+    otherPlayers.set(playerData.id, otherPlayer);
+}
+
+function handlePlayerLeft(playerId) {
+    const otherPlayer = otherPlayers.get(playerId);
+    if (otherPlayer) {
+        otherPlayer.destroy();
+        otherPlayers.delete(playerId);
+    }
+}

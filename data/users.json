@@ -1,1 +1,18 @@
-{}
+{
+  "123": {
+    "username": "123",
+    "password": "$2b$10$H0ZKLdnJTSM9r2GIdK67tu2ROzsD.fzm6JjxKfah6xGdwimu4h3qy",
+    "gameRecord": {
+      "wins": 0,
+      "losses": 0
+    }
+  },
+  "Oscar": {
+    "username": "Oscar",
+    "password": "$2b$10$MBYfvVE4wfroRh8YNIVIGOvtKpf6ro4DqR1gJREIYkEIVFLJcVf3O",
+    "gameRecord": {
+      "wins": 0,
+      "losses": 0
+    }
+  }
+}
