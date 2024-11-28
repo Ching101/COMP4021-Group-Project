@@ -1,21 +1,21 @@
-$(document).ready(function() {
-    let players = []; 
-    let playerResults = []; 
-    let currentPlayer; 
+$(document).ready(function () {
+    let players = [];
+    let playerResults = [];
+    let currentPlayer;
 
     $('#main-menu').show();
     $('#lobby').hide();
     $('#game-over').hide();
 
-    function simulatePlayers(num) { 
-        for (let i = 1; i <= num; i++) { 
-            let username = `Player${i}`; 
-            players.push(username); 
-            addPlayerResult(username); 
-        } 
-        updatePlayerList(); 
-        $('#start-game-btn').prop('disabled', false); 
-    } 
+    function simulatePlayers(num) {
+        for (let i = 1; i <= num; i++) {
+            let username = `Player${i}`;
+            players.push(username);
+            addPlayerResult(username);
+        }
+        updatePlayerList();
+        $('#start-game-btn').prop('disabled', false);
+    }
 
     function addPlayerResult(username) {
         const existingPlayer = playerResults.find(player => player.username === username);
@@ -24,43 +24,43 @@ $(document).ready(function() {
         }
     }
 
-    simulatePlayers(3); 
+    simulatePlayers(3);
 
-    $('#start-game-btn').on('click', function() {
+    $('#start-game-btn').on('click', function () {
         $('#lobby').hide();
         $('#game-over').show();
-        playRound(); 
+        playRound();
     });
 
     function playRound() {
         const winnerIndex = Math.floor(Math.random() * playerResults.length);
         const winner = playerResults[winnerIndex];
 
-        winner.wins += 1; 
+        winner.wins += 1;
         playerResults.forEach((player, index) => {
             if (index !== winnerIndex) {
-                player.losses += 1; 
+                player.losses += 1;
                 $('#defeat-animation').show();
             }
         });
 
         displayResults();
-        displayYourResults(); 
+        displayYourResults();
         updateYourCharacter();
 
-        $('#play-again-btn').show(); 
-        $('#victory-animation').show(); 
+        $('#play-again-btn').show();
+        $('#victory-animation').show();
     }
 
     function displayResults() {
         playerResults.sort((a, b) => b.wins - a.wins);
-    
-        $('#rankings-list').empty(); 
+
+        $('#rankings-list').empty();
         playerResults.forEach(player => {
             const highlightClass = (player.username === currentPlayer) ? 'highlight' : '';
             $('#rankings-list').append(`<li>${highlightClass ? `<span class="${highlightClass}">${player.username}: ${player.wins} Wins, ${player.losses} Losses</span>` : `${player.username}: ${player.wins} Wins, ${player.losses} Losses`}</li>`);
         });
-    
+
         if (currentPlayer) {
             const yourResults = playerResults.find(player => player.username === currentPlayer);
             if (yourResults) {
@@ -71,21 +71,21 @@ $(document).ready(function() {
                 $('#survival-time').text(yourResults.survivalTime);
             }
         }
-    
+
         $('#result-animation').show();
-        $('#victory-animation').show(); 
-        $('#defeat-animation').hide(); 
+        $('#victory-animation').show();
+        $('#defeat-animation').hide();
     }
-    
+
     function endGame() {
         playerResults.forEach(player => {
-            player.damageDealt = Math.floor(Math.random() * 100); 
-            player.powerUpsCollected = Math.floor (Math.random() * 5); 
-            player.survivalTime = Math.floor(Math.random() * 300); 
+            player.damageDealt = Math.floor(Math.random() * 100);
+            player.powerUpsCollected = Math.floor(Math.random() * 5);
+            player.survivalTime = Math.floor(Math.random() * 300);
         });
-    
-        displayResults(); 
-        $('#game-over').show(); 
+
+        displayResults();
+        $('#game-over').show();
     }
 
     function displayYourResults() {
@@ -108,30 +108,30 @@ $(document).ready(function() {
         }
     }
 
-    $('#reg-form').on('submit', function(e) {
+    $('#reg-form').on('submit', function (e) {
         e.preventDefault();
         const username = $('#reg-username').val();
         const password = $('#reg-password').val();
         if (password.length >= 8 && /\d/.test(password)) {
             $('#reg-message').text('Registration successful! You can now log in.');
             $('#reg-form')[0].reset();
-            addPlayerResult(username); 
+            addPlayerResult(username);
         } else {
             $('#reg-message').text('Password must be at least 8 characters long and include numbers.');
         }
     });
 
-    $('#login-form').on('submit', function(e) {
+    $('#login-form').on('submit', function (e) {
         e.preventDefault();
-        currentPlayer = $('#login-username').val(); 
+        currentPlayer = $('#login-username').val();
         const password = $('#login-password').val();
         players.push(currentPlayer);
-        addPlayerResult(currentPlayer); 
+        addPlayerResult(currentPlayer);
         $('#login-message').text('');
         $('#main-menu').hide();
         $('#lobby').show();
         updatePlayerList();
-        displayYourResults(); 
+        displayYourResults();
     });
 
     function updatePlayerList() {
@@ -142,25 +142,25 @@ $(document).ready(function() {
         });
     }
 
-    $('#play-again-btn').on('click', function() {
+    $('#play-again-btn').on('click', function () {
         $('#game-over').show();
         $('#lobby').hide();
-        $('#rankings-list').empty(); 
-        $('#play-again-btn').hide(); 
-        playRound(); 
+        $('#rankings-list').empty();
+        $('#play-again-btn').hide();
+        playRound();
     });
 
-    $('#return-lobby-btn').on('click', function() {
+    $('#return-lobby-btn').on('click', function () {
         $('#game-over').hide();
         $('#lobby').show();
     });
 
-    $('#back-to-menu-btn').on('click', function() {
+    $('#back-to-menu-btn').on('click', function () {
         $('#lobby').hide();
         $('#main-menu').show();
     });
 
-    $('#back-to-menu-btn-2').on('click', function() {
+    $('#back-to-menu-btn-2').on('click', function () {
         $('#game-over').hide();
         $('#main-menu').show();
     });

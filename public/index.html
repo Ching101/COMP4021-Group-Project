@@ -1,193 +1,168 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Arena Warriors</title>
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-        <link
-            href="https://fonts.googleapis.com/icon?family=Material+Icons"
-            rel="stylesheet"
-        />
-        <link href="style.css" rel="stylesheet" />
-    </head>
-    <body>
-        <div class="music-toggle-container">
-            <div class="music-toggle">
-                <span class="music-label">♫</span>
-                <label class="switch">
-                    <input type="checkbox" />
-                    <span class="slider"></span>
-                </label>
-            </div>
+
+<head>
+    <title>Arena Warriors</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="style.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="music-toggle-container">
+        <div class="music-toggle">
+            <span class="music-label">♫</span>
+            <label class="switch">
+                <input type="checkbox" />
+                <span class="slider"></span>
+            </label>
         </div>
-        <div class="lobby-container">
-            <h1 class="lobby-title">Lobby</h1>
-            
-            <div class="lobby-content">
-                <div class="connected-players">
-                    <h2>Connected Players:</h2>
-                    <div id="online-users-panel" class="col">
-                        <div id="online-users-area" class="col"></div>
+    </div>
+    <div class="lobby-container">
+        <h1 class="lobby-title">Lobby</h1>
+
+        <div class="lobby-content">
+            <div class="connected-players">
+                <h2>Connected Players:</h2>
+                <div id="online-users-panel" class="col">
+                    <div id="online-users-area" class="col"></div>
+                </div>
+            </div>
+
+            <div class="character-card">
+                <h2>Your Character:</h2>
+                <div class="character-avatar"></div>
+                <div class="game-stats">
+                    <div class="stat-row">
+                        <span>Wins:</span>
+                        <span id="wins">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Losses:</span>
+                        <span id="losses">0</span>
                     </div>
                 </div>
+            </div>
 
-                <div class="character-card">
-                    <h2>Your Character:</h2>
-                    <div class="character-avatar"></div>
-                    <div class="game-stats">
-                        <div class="stat-row">
-                            <span>Wins:</span>
-                            <span id="wins">0</span>
-                        </div>
-                        <div class="stat-row">
-                            <span>Losses:</span>
-                            <span id="losses">0</span>
-                        </div>
-                    </div>
+            <button id="instructions-btn" class="instructions-button">
+                Game Instructions
+            </button>
+
+            <div id="instructions-popup" class="popup-overlay">
+                <div class="popup-content">
+                    <span class="close-popup">&times;</span>
+                    <h3>Game Instructions</h3>
+                    <p>Controls:</p>
+                    <ul>
+                        <li>WASD for movement</li>
+                        <li>Mouse for attacking</li>
+                        <li>Spacebar for jumping</li>
+                    </ul>
+                    <p>Victory conditions:</p>
+                    <ul>
+                        <li>Last player standing</li>
+                        <li>Highest HP when time expires</li>
+                    </ul>
                 </div>
+            </div>
 
-                <button id="instructions-btn" class="instructions-button">
-                    Game Instructions
+            <div class="lobby-buttons">
+                <button class="lobby-button start-button disabled" disabled title="Need at least 2 players to start">
+                    Start Game
                 </button>
+                <button class="lobby-button menu-button">
+                    Back to Menu
+                </button>
+            </div>
+        </div>
+    </div>
 
-                <div id="instructions-popup" class="popup-overlay">
-                    <div class="popup-content">
-                        <span class="close-popup">&times;</span>
-                        <h3>Game Instructions</h3>
-                        <p>Controls:</p>
-                        <ul>
-                            <li>WASD for movement</li>
-                            <li>Mouse for attacking</li>
-                            <li>Spacebar for jumping</li>
-                        </ul>
-                        <p>Victory conditions:</p>
-                        <ul>
-                            <li>Last player standing</li>
-                            <li>Highest HP when time expires</li>
-                        </ul>
-                    </div>
-                </div>
+    <div id="signin-overlay" class="overlay row">
+        <div class="auth-container">
+            <h1 class="auth-title">Arena Warriors</h1>
 
-                <div class="lobby-buttons">
-                    <button
-                        class="lobby-button start-button disabled"
-                        disabled
-                        title="Need at least 2 players to start"
-                    >
-                        Start Game
+            <div id="register-section">
+                <h2>Register</h2>
+                <form id="register-form" class="auth-form">
+                    <input id="register-username" maxlength="10" placeholder="Choose a Username" />
+                    <input id="register-password" type="password"
+                        placeholder="Create a Password (min 8 chars, include numbers)" />
+                    <button type="submit" class="auth-button">
+                        Register
                     </button>
-                    <button class="lobby-button menu-button">
-                        Back to Menu
-                    </button>
-                </div>
+                    <div id="register-message" class="warning center"></div>
+                </form>
+            </div>
+
+            <div id="login-section">
+                <h2>Login</h2>
+                <form id="signin-form" class="auth-form">
+                    <input id="signin-username" placeholder="Enter Your Username" />
+                    <input id="signin-password" type="password" placeholder="Enter Your Password" />
+                    <button type="submit" class="auth-button">Login</button>
+                    <div id="signin-message" class="warning center"></div>
+                </form>
             </div>
         </div>
+    </div>
 
-        <div id="signin-overlay" class="overlay row">
-            <div class="auth-container">
-                <h1 class="auth-title">Arena Warriors</h1>
-
-                <div id="register-section">
-                    <h2>Register</h2>
-                    <form id="register-form" class="auth-form">
-                        <input
-                            id="register-username"
-                            maxlength="10"
-                            placeholder="Choose a Username"
-                        />
-                        <input
-                            id="register-password"
-                            type="password"
-                            placeholder="Create a Password (min 8 chars, include numbers)"
-                        />
-                        <button type="submit" class="auth-button">
-                            Register
-                        </button>
-                        <div id="register-message" class="warning center"></div>
-                    </form>
-                </div>
-
-                <div id="login-section">
-                    <h2>Login</h2>
-                    <form id="signin-form" class="auth-form">
-                        <input
-                            id="signin-username"
-                            placeholder="Enter Your Username"
-                        />
-                        <input
-                            id="signin-password"
-                            type="password"
-                            placeholder="Enter Your Password"
-                        />
-                        <button type="submit" class="auth-button">Login</button>
-                        <div id="signin-message" class="warning center"></div>
-                    </form>
-                </div>
-            </div>
+    <div id="game-over" style="display: none">
+        <h2>Game Over</h2>
+        <div id="result-animation" style="display: none">
+            <img id="victory-animation" src="public/assets/gifs/victory-22-16421.gif" alt="Victory!"
+                style="display: none" />
+            <img id="defeat-animation" src="public/assets/gifs/defeat-23-15017.gif" alt="Defeat!"
+                style="display: none" />
         </div>
-
-        <div id="game-over" style="display: none">
-            <h2>Game Over</h2>
-            <div id="result-animation" style="display: none">
-                <img
-                    id="victory-animation"
-                    src="public/assets/gifs/victory-22-16421.gif"
-                    alt="Victory!"
-                    style="display: none"
-                />
-                <img
-                    id="defeat-animation"
-                    src="public/assets/gifs/defeat-23-15017.gif"
-                    alt="Defeat!"
-                    style="display: none"
-                />
-            </div>
-            <div id="final-results">
-                <h3>Your Results:</h3>
-                <p>Wins: <span id="final-wins">0</span></p>
-                <p>Losses: <span id="final-losses">0</span></p>
-                <p>Damage Dealt: <span id="damage-dealt">0</span></p>
-                <p>
-                    Power-Ups Collected: <span id="power-ups-collected">0</span>
-                </p>
-                <p>Survival Time: <span id="survival-time">0</span> seconds</p>
-            </div>
-            <h3>Rankings:</h3>
-            <ul id="rankings-list"></ul>
-            <div class="button-container">
-                <button id="play-again-btn">Play Again</button>
-                <button id="return-lobby-btn">Return to Lobby</button>
-                <button id="back-to-menu-btn-2">Back to Menu</button>
-            </div>
+        <div id="final-results">
+            <h3>Your Results:</h3>
+            <p>Wins: <span id="final-wins">0</span></p>
+            <p>Losses: <span id="final-losses">0</span></p>
+            <p>Damage Dealt: <span id="damage-dealt">0</span></p>
+            <p>
+                Power-Ups Collected: <span id="power-ups-collected">0</span>
+            </p>
+            <p>Survival Time: <span id="survival-time">0</span> seconds</p>
         </div>
+        <h3>Rankings:</h3>
+        <ul id="rankings-list"></ul>
+        <div class="button-container">
+            <button id="play-again-btn">Play Again</button>
+            <button id="return-lobby-btn">Return to Lobby</button>
+            <button id="back-to-menu-btn-2">Back to Menu</button>
+        </div>
+    </div>
 
-        <script src="/socket.io/socket.io.min.js"></script>
-        <script src="scripts/socket.js"></script>
-        <script src="scripts/ui.js"></script>
-        <script src="scripts/registration.js"></script>
-        <script src="scripts/authentication.js"></script>
-        <script src="scripts/game.js"></script>
-        <script src="scripts/gameStats.js"></script>
-        <script src="scripts/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.87.0/dist/phaser.min.js"></script>
+    <script src="/socket.io/socket.io.min.js"></script>
+    <script src="scripts/socket.js"></script>
+    <script src="scripts/ui.js"></script>
+    <script src="scripts/registration.js"></script>
+    <script src="scripts/authentication.js"></script>
+    <script src="scripts/game.js"></script>
+    <script src="scripts/gameStats.js"></script>
+    <script src="scripts/app.js"></script>
 
-        <script>
-            $(function () {
-                // Initialize the UI
-                UI.initialize()
-                VenueSelector.initialize()
+    <script>
+        $(function () {
+            // Initialize the UI
+            UI.initialize()
+            VenueSelector.initialize()
 
-                // Validate the signin
-                Authentication.validate(
-                    () => {
-                        SignInForm.hide()
-                        UserPanel.update(Authentication.getUser())
-                        UserPanel.show()
-                        Socket.connect()
-                    },
-                    () => {
-                        SignInForm.show()
-                    }
-                )
-            })
-        </script>
-    </body>
+            // Validate the signin
+            Authentication.validate(
+                () => {
+                    SignInForm.hide()
+                    UserPanel.update(Authentication.getUser())
+                    UserPanel.show()
+                    Socket.connect()
+                },
+                () => {
+                    SignInForm.show()
+                }
+            )
+        })
+    </script>
+</body>
+
 </html>
