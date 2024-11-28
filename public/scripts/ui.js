@@ -290,7 +290,7 @@ const initializeInstructionsPopup = function() {
     const closeBtn = document.querySelector('.close-popup');
 
     btn.onclick = function() {
-        popup.style.display = "block";
+        popup.style.display = "flex";
     }
 
     closeBtn.onclick = function() {
@@ -303,3 +303,8 @@ const initializeInstructionsPopup = function() {
         }
     }
 }
+
+// Make sure this function is called when the document is ready
+$(document).ready(function() {
+    initializeInstructionsPopup();
+});
