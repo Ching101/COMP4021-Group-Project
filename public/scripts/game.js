@@ -1,5 +1,6 @@
 let otherPlayers = new Map();
 
+// Updates the position and state of other players
 function updateOtherPlayer(playerData) {
     const otherPlayer = otherPlayers.get(playerData.id);
     if (otherPlayer) {
@@ -109,40 +110,38 @@ const SPAWN_POINTS = [
 ];
 
 function initializeMultiplayer() {
-    gameSocket = io();
+    if (!player) {
+        console.error('Player not initialized');
+        return;
+    }
 
-    // Hide game screen initially
-    $('#game').hide();
+    gameSocket = Socket.getSocket();
+    if (!gameSocket) {
+        console.error('Socket not connected');
+        return;
+    }
 
-    gameSocket.on('connect', () => {
-        console.log('Connected to game server');
-        const playerId = generatePlayerId();
-        player.playerId = playerId;
+    const playerId = generatePlayerId();
+    player.playerId = playerId;
 
-        const spawnPoint = SPAWN_POINTS[otherPlayers.size] || SPAWN_POINTS[0];
+    const spawnPoint = SPAWN_POINTS[otherPlayers.size] || SPAWN_POINTS[0];
 
-        gameSocket.emit('join_game', {
-            roomId: getRoomIdFromURL(),
-            player: {
-                id: playerId,
-                username: `Player${Math.floor(Math.random() * 1000)}`,
-                x: spawnPoint.x,
-                y: spawnPoint.y,
-                currentWeapon: currentWeapon,
-                health: 100
-            }
-        });
-    });
-
-    gameSocket.on('game_start', () => {
-        console.log('Game starting!');
-        // Only start the game if the start button was clicked
-        if (Socket.isGameStarted()) {
-            $('#game').show();
-            startGame();
-            startItemSpawning.call(this);
+    // Join the game
+    gameSocket.emit('join_game', {
+        player: {
+            id: playerId,
+            username: `Player${Math.floor(Math.random() * 1000)}`,
+            x: spawnPoint.x,
+            y: spawnPoint.y,
+            currentWeapon: currentWeapon,
+            health: 100
         }
     });
+
+    // Set up game event listeners
+    gameSocket.on('player_joined', handlePlayerJoined.bind(this));
+    gameSocket.on('player_left', handlePlayerLeft.bind(this));
+    gameSocket.on('player_state', updateOtherPlayer);
 }
 
 function preload() {
@@ -209,6 +208,12 @@ function preload() {
 }
 
 function create() {
+    // Initialize player first
+    player = this.physics.add.sprite(400, 300, 'player');
+    player.setCollideWorldBounds(true);
+    player.health = 100;
+    player.direction = 1; // 1 for right, -1 for left
+
     // Add the background image
     const background = this.add.image(400, 300, 'background');
 
@@ -250,12 +255,6 @@ function create() {
     const smallPlatform2 = platforms.create(700, 250, 'ground');  // Changed from 200 to 250
     smallPlatform2.setDisplaySize(100, 20);
     smallPlatform2.refreshBody();
-
-    // Create player
-    player = this.physics.add.sprite(400, 300, 'player');
-    player.setCollideWorldBounds(true);
-    player.health = 100;
-    player.direction = 1; // 1 for right, -1 for left
 
     // Add collision between player and ground
     this.physics.add.collider(player, platforms);
@@ -931,31 +930,38 @@ document.addEventListener("DOMContentLoaded", () => {
     CheatMode.initialize()
 })
 
-// Initialize multiplayer when game starts
+// Initializes and starts the game
 function startGame() {
-    if (!gameSocket) {
-        initializeMultiplayer();
+    // Create Phaser game instance if it doesn't exist
+    if (!window.game) {
+        window.game = new Phaser.Game(config);
     }
 
-    // Hide lobby and show game
-    $('.lobby-container').hide();
-    $('#game').show();
+    // Wait for scene creation
+    window.game.events.once('ready', () => {
+        $('.lobby-container').hide();
+        $('#game').show();
 
-    // Initialize game state
-    player.health = 100;
-    updateHealthBar();
+        // Initialize multiplayer components
+        if (!gameSocket) {
+            initializeMultiplayer();
+        }
 
-    // Start spawning items
-    startItemSpawning();
+        // Start game systems
+        if (typeof startItemSpawning === 'function') {
+            startItemSpawning();
+        }
 
-    // Start match timer (3 minutes)
-    gameTimer = this.time.addEvent({
-        delay: 180000,
-        callback: endMatch,
-        callbackScope: this
+        // Initialize match timer
+        gameTimer = window.game.time.addEvent({
+            delay: 180000, // 3 minutes
+            callback: endMatch,
+            callbackScope: window.game
+        });
     });
 }
 
+// Generates unique player ID
 function generatePlayerId() {
     return 'player_' + Math.random().toString(36).substr(2, 9);
 }
@@ -974,13 +980,14 @@ function handlePlayerJoined(playerData) {
     console.log('Player joined:', playerData);
     const otherPlayer = this.add.sprite(playerData.x, playerData.y, 'player');
     otherPlayer.id = playerData.id;
-    otherPlayer.setTint(0xff0000); // Make other players red to distinguish them
+    otherPlayer.setTint(0xff0000); // Visual distinction for other players
     this.physics.add.existing(otherPlayer);
     otherPlayer.body.setCollideWorldBounds(true);
     this.physics.add.collider(otherPlayer, platforms);
     otherPlayers.set(playerData.id, otherPlayer);
 }
 
+// Handles player disconnection
 function handlePlayerLeft(playerId) {
     const otherPlayer = otherPlayers.get(playerId);
     if (otherPlayer) {
