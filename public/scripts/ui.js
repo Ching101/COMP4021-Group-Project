@@ -137,7 +137,7 @@ const UserPanel = (function () {
 
 const OnlineUsersPanel = (function () {
     // This function initializes the UI
-    const initialize = function () {}
+    const initialize = function () { }
 
     // This function updates the online users panel
     const update = function (onlineUsers) {
@@ -222,10 +222,10 @@ const UI = (function () {
         $(".menu-button").on("click", () => {
             // Disconnect from socket
             Socket.disconnect()
-            
+
             // Hide user panel
             UserPanel.hide()
-            
+
             // Show signin form
             SignInForm.show()
         })
@@ -284,27 +284,38 @@ const VenueSelector = (function () {
     return { initialize, getSelectedVenue }
 })()
 
-const initializeInstructionsPopup = function() {
+const initializeInstructionsPopup = function () {
     const popup = document.getElementById('instructions-popup');
     const btn = document.getElementById('instructions-btn');
     const closeBtn = document.querySelector('.close-popup');
 
-    btn.onclick = function() {
-        popup.style.display = "flex";
+    btn.onclick = function () {
+        popup.style.display = "block";
     }
 
-    closeBtn.onclick = function() {
+    closeBtn.onclick = function () {
         popup.style.display = "none";
     }
 
-    window.onclick = function(event) {
+    window.onclick = function (event) {
         if (event.target == popup) {
             popup.style.display = "none";
         }
     }
 }
 
-// Make sure this function is called when the document is ready
-$(document).ready(function() {
-    initializeInstructionsPopup();
-});
+const GameLobby = (function () {
+    const initialize = function () {
+        // Start game button handler
+        $('.start-button').on('click', function () {
+            if (!$(this).hasClass('disabled')) {
+                Socket.getSocket().emit('start_game');
+                $('.lobby-container').hide();
+                $('#game').show();
+                startGame();
+            }
+        });
+    }
+
+    return { initialize };
+})();

@@ -1,38 +1,51 @@
-$(document).ready(function() {
-    let playerResults = []; 
+$(document).ready(function () {
+    let playerResults = [];
     let currentPlayer;
 
-    // Initialize UI components
-    UI.initialize();
+    $('#main-menu').show();
+    $('#lobby').hide();
+    $('#game-over').hide();
+
+    GameLobby.initialize();
+
+    function simulatePlayers(num) {
+        for (let i = 1; i <= num; i++) {
+            let username = `Player${i}`;
+            players.push(username);
+            addPlayerResult(username);
+        }
+        updatePlayerList();
+        $('#start-game-btn').prop('disabled', false);
+    }
 
     function addPlayerResult(username) {
         const existingPlayer = playerResults.find(player => player.username === username);
         if (!existingPlayer) {
-            playerResults.push({ 
-                username: username, 
-                wins: 0, 
-                losses: 0, 
-                damageDealt: 0, 
-                powerUpsCollected: 0, 
-                survivalTime: 0 
+            playerResults.push({
+                username: username,
+                wins: 0,
+                losses: 0,
+                damageDealt: 0,
+                powerUpsCollected: 0,
+                survivalTime: 0
             });
             updateStartButton();
         }
     }
 
     // Game logic handlers
-    $('#start-game-btn').on('click', function() {
-        playRound(); 
+    $('#start-game-btn').on('click', function () {
+        playRound();
     });
 
     function playRound() {
         const winnerIndex = Math.floor(Math.random() * playerResults.length);
         const winner = playerResults[winnerIndex];
 
-        winner.wins += 1; 
+        winner.wins += 1;
         playerResults.forEach((player, index) => {
             if (index !== winnerIndex) {
-                player.losses += 1; 
+                player.losses += 1;
             }
         });
 
@@ -49,8 +62,8 @@ $(document).ready(function() {
 
     function displayResults() {
         playerResults.sort((a, b) => b.wins - a.wins);
-        
-        $('#rankings-list').empty(); 
+
+        $('#rankings-list').empty();
         playerResults.forEach(player => {
             const userDisplay = UI.getUserDisplay({
                 username: `${player.username}: ${player.wins} Wins, ${player.losses} Losses`
@@ -63,11 +76,11 @@ $(document).ready(function() {
     }
 
     // Authentication handlers
-    $('#reg-form').on('submit', function(e) {
+    $('#reg-form').on('submit', function (e) {
         e.preventDefault();
         const username = $('#reg-username').val();
         const password = $('#reg-password').val();
-        
+
         Registration.register(
             username,
             password,
@@ -80,18 +93,18 @@ $(document).ready(function() {
         );
     });
 
-    $('#login-form').on('submit', function(e) {
+    $('#login-form').on('submit', function (e) {
         e.preventDefault();
         const username = $('#login-username').val();
         const password = $('#login-password').val();
-        
+
         Authentication.signin(
             username,
             password,
             () => {
                 currentPlayer = username;
                 addPlayerResult(currentPlayer);
-                OnlineUsersPanel.update({[currentPlayer]: true});
+                OnlineUsersPanel.update({ [currentPlayer]: true });
                 SignInForm.hide();
                 UserPanel.show();
             },
@@ -113,7 +126,7 @@ $(document).ready(function() {
     }
 
     // Initialize music state
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const musicButton = document.querySelector('.music-button');
         let isMusicPlaying = true;
 
@@ -154,7 +167,7 @@ $(document).ready(function() {
         }
 
         // Music button click handler
-        musicButton.addEventListener('click', function() {
+        musicButton.addEventListener('click', function () {
             this.classList.toggle('active');
             isMusicPlaying = !isMusicPlaying;
             toggleMusic();
@@ -165,13 +178,13 @@ $(document).ready(function() {
     });
 
     // Add this to your existing JavaScript
-    document.getElementById('start-game-btn').addEventListener('click', function() {
+    document.getElementById('start-game-btn').addEventListener('click', function () {
         // Hide the lobby
         document.querySelector('.lobby-container').style.display = 'none';
-        
+
         // Show game over page
         document.getElementById('game-over-page').style.display = 'flex';
-        
+
         // Update stats (you can modify these values based on actual game data)
         document.getElementById('damage-dealt').textContent = '150';
         document.getElementById('powerups-collected').textContent = '3';
@@ -179,14 +192,14 @@ $(document).ready(function() {
     });
 
     // Handle Play Again button
-    document.getElementById('play-again-btn').addEventListener('click', function() {
+    document.getElementById('play-again-btn').addEventListener('click', function () {
         // Reset game state and start a new game
         resetGameState();
         startNewGame();
     });
 
     // Handle Return to Lobby button
-    document.getElementById('return-lobby-btn').addEventListener('click', function() {
+    document.getElementById('return-lobby-btn').addEventListener('click', function () {
         // Hide game over page
         document.getElementById('game-over-page').style.display = 'none';
         // Show lobby
@@ -211,7 +224,7 @@ $(document).ready(function() {
     }
 
     // Handle Back to Menu button
-    document.getElementById('back-to-menu-btn').addEventListener('click', function() {
+    document.getElementById('back-to-menu-btn').addEventListener('click', function () {
         // Add your menu navigation logic here
         window.location.href = '/menu'; // Adjust the path as needed
     });

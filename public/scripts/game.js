@@ -932,33 +932,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Initializes and starts the game
 function startGame() {
-    // Create Phaser game instance if it doesn't exist
     if (!window.game) {
         window.game = new Phaser.Game(config);
     }
 
-    // Wait for scene creation
-    window.game.events.once('ready', () => {
-        $('.lobby-container').hide();
-        $('#game').show();
-
+    const gameScene = window.game.scene.scenes[0];
+    if (gameScene) {
         // Initialize multiplayer components
         if (!gameSocket) {
+            gameSocket = Socket.getSocket();
             initializeMultiplayer();
         }
 
         // Start game systems
         if (typeof startItemSpawning === 'function') {
-            startItemSpawning();
+            startItemSpawning.call(gameScene);
         }
 
         // Initialize match timer
-        gameTimer = window.game.time.addEvent({
+        gameTimer = gameScene.time.addEvent({
             delay: 180000, // 3 minutes
             callback: endMatch,
-            callbackScope: window.game
+            callbackScope: gameScene
         });
-    });
+
+        // Emit ready state
+        gameSocket.emit('player_ready', {
+            id: player.playerId,
+            x: player.x,
+            y: player.y,
+            roomId: getRoomIdFromURL() || 'default'
+        });
+    }
 }
 
 // Generates unique player ID
@@ -994,4 +999,23 @@ function handlePlayerLeft(playerId) {
         otherPlayer.destroy();
         otherPlayers.delete(playerId);
     }
+}
+
+function initSinglePlayerGame() {
+    // Create Phaser game instance if it doesn't exist
+    if (!window.game) {
+        window.game = new Phaser.Game(config);
+    }
+
+    // Start game systems
+    if (typeof startItemSpawning === 'function') {
+        startItemSpawning();
+    }
+
+    // Initialize match timer
+    gameTimer = window.game.time.addEvent({
+        delay: 180000, // 3 minutes
+        callback: endMatch,
+        callbackScope: window.game
+    });
 }

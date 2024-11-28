@@ -6,7 +6,7 @@ const Socket = (function () {
         return socket
     }
 
-    const updateStartButton = function() {
+    const updateStartButton = function () {
         const startButton = document.querySelector('.start-button')
         if (startButton) {
             if (onlineUserCount >= 2) {
@@ -56,6 +56,18 @@ const Socket = (function () {
             onlineUserCount--
             updateStartButton()
         })
+
+        socket.on('game_started', () => {
+            $('.lobby-container').hide();
+            $('#game').show();
+            startGame();
+        });
+
+        socket.on('player_ready', (playerData) => {
+            if (window.game && window.game.scene.scenes[0]) {
+                handlePlayerJoined.call(window.game.scene.scenes[0], playerData);
+            }
+        });
     }
 
     const disconnect = function () {

@@ -71,6 +71,40 @@ io.on("connection", (socket) => {
             io.emit("remove user", JSON.stringify(user))
         }
     })
+
+    // Add after line 74
+    let activeGames = new Map();
+
+    // Inside io.on("connection") after line 74
+    socket.on('start_game', () => {
+        const roomId = generateRoomId();
+        const game = {
+            id: roomId,
+            players: new Set(),
+            started: false
+        };
+
+        activeGames.set(roomId, game);
+
+        // Notify all connected players to start the game
+        io.emit('game_started', {
+            roomId: roomId,
+            players: Array.from(onlineUsers)
+        });
+    });
+
+    socket.on('player_ready', (playerData) => {
+        const game = activeGames.get(playerData.roomId);
+        if (game) {
+            game.players.add(playerData.id);
+            socket.broadcast.emit('player_ready', playerData);
+        }
+    });
+
+    // Add this helper function
+    function generateRoomId() {
+        return Math.random().toString(36).substring(2, 15);
+    }
 })
 
 // This helper function checks whether the text only contains word characters
