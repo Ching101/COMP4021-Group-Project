@@ -1,167 +1,218 @@
-$(document).ready(function () {
-    let players = [];
-    let playerResults = [];
+$(document).ready(function() {
+    let playerResults = []; 
     let currentPlayer;
 
-    $('#main-menu').show();
-    $('#lobby').hide();
-    $('#game-over').hide();
-
-    function simulatePlayers(num) {
-        for (let i = 1; i <= num; i++) {
-            let username = `Player${i}`;
-            players.push(username);
-            addPlayerResult(username);
-        }
-        updatePlayerList();
-        $('#start-game-btn').prop('disabled', false);
-    }
+    // Initialize UI components
+    UI.initialize();
 
     function addPlayerResult(username) {
         const existingPlayer = playerResults.find(player => player.username === username);
         if (!existingPlayer) {
-            playerResults.push({ username: username, wins: 0, losses: 0, damageDealt: 0, powerUpsCollected: 0, survivalTime: 0 });
+            playerResults.push({ 
+                username: username, 
+                wins: 0, 
+                losses: 0, 
+                damageDealt: 0, 
+                powerUpsCollected: 0, 
+                survivalTime: 0 
+            });
+            updateStartButton();
         }
     }
 
-    simulatePlayers(3);
-
-    $('#start-game-btn').on('click', function () {
-        $('#lobby').hide();
-        $('#game-over').show();
-        playRound();
+    // Game logic handlers
+    $('#start-game-btn').on('click', function() {
+        playRound(); 
     });
 
     function playRound() {
         const winnerIndex = Math.floor(Math.random() * playerResults.length);
         const winner = playerResults[winnerIndex];
 
-        winner.wins += 1;
+        winner.wins += 1; 
         playerResults.forEach((player, index) => {
             if (index !== winnerIndex) {
-                player.losses += 1;
-                $('#defeat-animation').show();
+                player.losses += 1; 
             }
         });
 
-        displayResults();
-        displayYourResults();
-        updateYourCharacter();
+        // Update game record for the current user
+        if (currentPlayer === winner.username) {
+            GameRecord.update(true);
+        } else {
+            GameRecord.update(false);
+        }
 
-        $('#play-again-btn').show();
-        $('#victory-animation').show();
+        displayResults();
+        UserPanel.update(Authentication.getUser());
     }
 
     function displayResults() {
         playerResults.sort((a, b) => b.wins - a.wins);
-
-        $('#rankings-list').empty();
+        
+        $('#rankings-list').empty(); 
         playerResults.forEach(player => {
-            const highlightClass = (player.username === currentPlayer) ? 'highlight' : '';
-            $('#rankings-list').append(`<li>${highlightClass ? `<span class="${highlightClass}">${player.username}: ${player.wins} Wins, ${player.losses} Losses</span>` : `${player.username}: ${player.wins} Wins, ${player.losses} Losses`}</li>`);
+            const userDisplay = UI.getUserDisplay({
+                username: `${player.username}: ${player.wins} Wins, ${player.losses} Losses`
+            });
+            if (player.username === currentPlayer) {
+                userDisplay.addClass('highlight');
+            }
+            $('#rankings-list').append($('<li>').append(userDisplay));
         });
-
-        if (currentPlayer) {
-            const yourResults = playerResults.find(player => player.username === currentPlayer);
-            if (yourResults) {
-                $('#final-wins').text(yourResults.wins);
-                $('#final-losses').text(yourResults.losses);
-                $('#damage-dealt').text(yourResults.damageDealt);
-                $('#power-ups-collected').text(yourResults.powerUpsCollected);
-                $('#survival-time').text(yourResults.survivalTime);
-            }
-        }
-
-        $('#result-animation').show();
-        $('#victory-animation').show();
-        $('#defeat-animation').hide();
     }
 
-    function endGame() {
-        playerResults.forEach(player => {
-            player.damageDealt = Math.floor(Math.random() * 100);
-            player.powerUpsCollected = Math.floor(Math.random() * 5);
-            player.survivalTime = Math.floor(Math.random() * 300);
-        });
-
-        displayResults();
-        $('#game-over').show();
-    }
-
-    function displayYourResults() {
-        if (currentPlayer) {
-            const yourResults = playerResults.find(player => player.username === currentPlayer);
-            if (yourResults) {
-                $('#final-wins').text(yourResults.wins);
-                $('#final-losses').text(yourResults.losses);
-            }
-        }
-    }
-
-    function updateYourCharacter() {
-        if (currentPlayer) {
-            const yourResults = playerResults.find(player => player.username === currentPlayer);
-            if (yourResults) {
-                $('#wins').text(yourResults.wins);
-                $('#losses').text(yourResults.losses);
-            }
-        }
-    }
-
-    $('#reg-form').on('submit', function (e) {
+    // Authentication handlers
+    $('#reg-form').on('submit', function(e) {
         e.preventDefault();
         const username = $('#reg-username').val();
         const password = $('#reg-password').val();
-        if (password.length >= 8 && /\d/.test(password)) {
-            $('#reg-message').text('Registration successful! You can now log in.');
-            $('#reg-form')[0].reset();
-            addPlayerResult(username);
-        } else {
-            $('#reg-message').text('Password must be at least 8 characters long and include numbers.');
-        }
+        
+        Registration.register(
+            username,
+            password,
+            () => {
+                addPlayerResult(username);
+                SignInForm.hide();
+                UserPanel.show();
+            },
+            (error) => $('#reg-message').text(error)
+        );
     });
 
-    $('#login-form').on('submit', function (e) {
+    $('#login-form').on('submit', function(e) {
         e.preventDefault();
-        currentPlayer = $('#login-username').val();
+        const username = $('#login-username').val();
         const password = $('#login-password').val();
-        players.push(currentPlayer);
-        addPlayerResult(currentPlayer);
-        $('#login-message').text('');
-        $('#main-menu').hide();
-        $('#lobby').show();
-        updatePlayerList();
-        displayYourResults();
+        
+        Authentication.signin(
+            username,
+            password,
+            () => {
+                currentPlayer = username;
+                addPlayerResult(currentPlayer);
+                OnlineUsersPanel.update({[currentPlayer]: true});
+                SignInForm.hide();
+                UserPanel.show();
+            },
+            (error) => $('#login-message').text(error)
+        );
     });
 
-    function updatePlayerList() {
-        $('#player-list').empty();
-        players.forEach(player => {
-            const highlightClass = (player === currentPlayer) ? 'highlight' : '';
-            $('#player-list').append(`<li>${highlightClass ? `<span class="${highlightClass}">${player}</span>` : player}</li>`);
-        });
+    // Example of enabling/disabling the start button based on player count
+    function updateStartButton() {
+        const startButton = document.getElementById('start-game-btn');
+        console.log('Player count:', playerResults.length); // Debug log
+        if (playerResults.length >= 2) {
+            startButton.disabled = false;
+            console.log('Enabling button'); // Debug log
+        } else {
+            startButton.disabled = true;
+            console.log('Disabling button'); // Debug log
+        }
     }
 
-    $('#play-again-btn').on('click', function () {
-        $('#game-over').show();
-        $('#lobby').hide();
-        $('#rankings-list').empty();
-        $('#play-again-btn').hide();
-        playRound();
+    // Initialize music state
+    document.addEventListener('DOMContentLoaded', function() {
+        const musicButton = document.querySelector('.music-button');
+        let isMusicPlaying = true;
+
+        // Create audio elements for different pages
+        const menuMusic = new Audio('music/Frontpage.mp3');
+        const gameMusic = new Audio('msuic/Gamepage.mp3');
+        const lobbyMusic = new Audio('music/Frontpage.mp3');
+
+        // Set them to loop
+        menuMusic.loop = true;
+        gameMusic.loop = true;
+        lobbyMusic.loop = true;
+
+        // Function to stop all music
+        function stopAllMusic() {
+            menuMusic.pause();
+            menuMusic.currentTime = 0;
+            gameMusic.pause();
+            gameMusic.currentTime = 0;
+            lobbyMusic.pause();
+            lobbyMusic.currentTime = 0;
+        }
+
+        // Function to handle music toggle
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                stopAllMusic();
+            } else {
+                // Play music based on current page
+                if (window.location.pathname.includes('game')) {
+                    gameMusic.play();
+                } else if (window.location.pathname.includes('lobby')) {
+                    lobbyMusic.play();
+                } else {
+                    menuMusic.play(); // Default to menu music
+                }
+            }
+        }
+
+        // Music button click handler
+        musicButton.addEventListener('click', function() {
+            this.classList.toggle('active');
+            isMusicPlaying = !isMusicPlaying;
+            toggleMusic();
+        });
+
+        // Initial music play
+        toggleMusic();
     });
 
-    $('#return-lobby-btn').on('click', function () {
-        $('#game-over').hide();
-        $('#lobby').show();
+    // Add this to your existing JavaScript
+    document.getElementById('start-game-btn').addEventListener('click', function() {
+        // Hide the lobby
+        document.querySelector('.lobby-container').style.display = 'none';
+        
+        // Show game over page
+        document.getElementById('game-over-page').style.display = 'flex';
+        
+        // Update stats (you can modify these values based on actual game data)
+        document.getElementById('damage-dealt').textContent = '150';
+        document.getElementById('powerups-collected').textContent = '3';
+        document.getElementById('survival-time').textContent = '45s';
     });
 
-    $('#back-to-menu-btn').on('click', function () {
-        $('#lobby').hide();
-        $('#main-menu').show();
+    // Handle Play Again button
+    document.getElementById('play-again-btn').addEventListener('click', function() {
+        // Reset game state and start a new game
+        resetGameState();
+        startNewGame();
     });
 
-    $('#back-to-menu-btn-2').on('click', function () {
-        $('#game-over').hide();
-        $('#main-menu').show();
+    // Handle Return to Lobby button
+    document.getElementById('return-lobby-btn').addEventListener('click', function() {
+        // Hide game over page
+        document.getElementById('game-over-page').style.display = 'none';
+        // Show lobby
+        document.querySelector('.lobby-container').style.display = 'grid';
+        // Reset any necessary game states
+        resetGameState();
+    });
+
+    function resetGameState() {
+        // Reset game statistics
+        document.getElementById('damage-dealt').textContent = '0';
+        document.getElementById('powerups-collected').textContent = '0';
+        document.getElementById('survival-time').textContent = '0s';
+        // Add any other game state resets needed
+    }
+
+    function startNewGame() {
+        // Hide game over page
+        document.getElementById('game-over-page').style.display = 'none';
+        // Reset game elements and start new game
+        // Add your game initialization logic here
+    }
+
+    // Handle Back to Menu button
+    document.getElementById('back-to-menu-btn').addEventListener('click', function() {
+        // Add your menu navigation logic here
+        window.location.href = '/menu'; // Adjust the path as needed
     });
 });
