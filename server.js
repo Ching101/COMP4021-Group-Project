@@ -462,6 +462,25 @@ app.get("/getStats/:username", (req, res) => {
     }
 })
 
+// Add this endpoint to reload stats
+app.get("/reloadStats", (req, res) => {
+    try {
+        // Clear require cache for users.json
+        delete require.cache[require.resolve("./data/users.json")];
+        
+        // Read fresh data from users.json
+        const data = fs.readFileSync("data/users.json", "utf8");
+        console.log("data", data);
+        
+        const users = JSON.parse(data);
+        
+        res.json({ status: "success" });
+    } catch (err) {
+        console.error("Error reloading stats:", err);
+        res.status(500).json({ status: "error", error: "Failed to reload stats" });
+    }
+});
+
 // Use a web server to listen at port 8000
 httpServer.listen(8000, () => {
     console.log("The server has started...")

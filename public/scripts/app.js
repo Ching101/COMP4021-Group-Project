@@ -61,5 +61,18 @@ $(document).ready(function() {
         // Reset any other game states or variables here
     }
 
+    // Start auto-refreshing stats when in lobby
+    GameStats.startAutoRefresh();
+
+    // Stop refreshing when game starts
+    Socket.on('game_started', () => {
+        GameStats.stopAutoRefresh();
+    });
+
+    // Resume refreshing when returning to lobby
+    $('#return-lobby-btn, #return-lobby-btn-2').on('click', () => {
+        GameStats.startAutoRefresh();
+    });
+
     // ... rest of your existing jQuery ready code ...
 });

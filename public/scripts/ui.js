@@ -99,6 +99,26 @@ const UserPanel = (function () {
                 SignInForm.show()
             })
         })
+
+        // Add stats update listener
+        $(document).on('stats-updated', function(e, stats) {
+            const user = Authentication.getUser();
+            if (user) {
+                user.gameRecord = stats;
+                update(user);
+                
+                // Refresh the online users display
+                const userDiv = $(`#username-${user.username}`);
+                if (userDiv.length) {
+                    userDiv.addClass('updated')
+                        .delay(200)
+                        .queue(function(next) {
+                            $(this).removeClass('updated');
+                            next();
+                        });
+                }
+            }
+        });
     }
 
     // This function shows the form with the user
