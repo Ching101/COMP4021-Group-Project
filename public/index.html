@@ -12,7 +12,7 @@
     <body>
         <!-- Add this at the top of the body -->
 <div class="music-toggle-container">
-    <button class="music-button active">
+    <button class="music-button">
         <span class="music-icon">♫</span>
         Music
     </button>
@@ -181,13 +181,13 @@
             <div id="result-animation" style="display: none">
                 <img
                     id="victory-animation"
-                    src="public/assets/gifs/victory-22-16421.gif"
+                    src="/assets/gifs/victory-22-16421.gif"
                     alt="Victory!"
                     style="display: none"
                 />
                 <img
                     id="defeat-animation"
-                    src="public/assets/gifs/defeat-23-15017.gif"
+                    src="/assets/gifs/defeat-23-15017.gif"
                     alt="Defeat!"
                     style="display: none"
                 />
@@ -268,5 +268,13 @@
                 <div class="game-title">Arena Warriors</div>
             </div>
         </div>
+
+        <!-- Add this where you want the game to appear -->
+        <div id="gameContainer" style="display: none;">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        
+        </script>
     </body>
 </html>

@@ -1,4 +1,43 @@
 $(document).ready(function() {
+    // Create all sounds at the start
+    const sounds = {
+        background: new Audio('/assets/music/Frontpage.mp3')
+    };
+    sounds.background.loop = true;
+    
+    const musicButton = document.querySelector('.music-button');
+    
+    // Start with button in inactive state
+    musicButton.className = 'music-button inactive';
+    
+    musicButton.addEventListener('click', () => {
+        // Toggle button states
+        musicButton.classList.toggle('active');
+        musicButton.classList.toggle('inactive');
+        
+        // Toggle music
+        if (musicButton.classList.contains('active')) {
+            sounds.background.play().catch(error => console.log("Audio play failed:", error));
+        } else {
+            sounds.background.pause();
+        }
+        
+        // Debug
+        // console.log('Current classes:', musicButton.className);
+    });
+
+    // Handle Start Game button
+    $('#start-game-btn').on('click', function() {
+        // Hide lobby container
+        $('.lobby-container').hide();
+        
+        // Show game container
+        $('#gameContainer').show();
+        
+        // Initialize and start the game
+        startGame();
+    });
+
     let playerResults = []; 
     let currentPlayer;
 
@@ -112,70 +151,21 @@ $(document).ready(function() {
         }
     }
 
-    // Initialize music state
-    document.addEventListener('DOMContentLoaded', function() {
-        const musicButton = document.querySelector('.music-button');
-        let isMusicPlaying = true;
-
-        // Create audio elements for different pages
-        const menuMusic = new Audio('music/Frontpage.mp3');
-        const gameMusic = new Audio('msuic/Gamepage.mp3');
-        const lobbyMusic = new Audio('music/Frontpage.mp3');
-
-        // Set them to loop
-        menuMusic.loop = true;
-        gameMusic.loop = true;
-        lobbyMusic.loop = true;
-
-        // Function to stop all music
-        function stopAllMusic() {
-            menuMusic.pause();
-            menuMusic.currentTime = 0;
-            gameMusic.pause();
-            gameMusic.currentTime = 0;
-            lobbyMusic.pause();
-            lobbyMusic.currentTime = 0;
-        }
-
-        // Function to handle music toggle
-        function toggleMusic() {
-            if (isMusicPlaying) {
-                stopAllMusic();
-            } else {
-                // Play music based on current page
-                if (window.location.pathname.includes('game')) {
-                    gameMusic.play();
-                } else if (window.location.pathname.includes('lobby')) {
-                    lobbyMusic.play();
-                } else {
-                    menuMusic.play(); // Default to menu music
-                }
-            }
-        }
-
-        // Music button click handler
-        musicButton.addEventListener('click', function() {
-            this.classList.toggle('active');
-            isMusicPlaying = !isMusicPlaying;
-            toggleMusic();
-        });
-
-        // Initial music play
-        toggleMusic();
-    });
-
-    // Add this to your existing JavaScript
+    // Handle Start Game button
     document.getElementById('start-game-btn').addEventListener('click', function() {
-        // Hide the lobby
+        // Hide lobby container
         document.querySelector('.lobby-container').style.display = 'none';
         
-        // Show game over page
-        document.getElementById('game-over-page').style.display = 'flex';
+        // Show game container (if you have one)
+        const gameContainer = document.getElementById('gameContainer');
+        if (gameContainer) {
+            gameContainer.style.display = 'block';
+        }
         
-        // Update stats (you can modify these values based on actual game data)
-        document.getElementById('damage-dealt').textContent = '150';
-        document.getElementById('powerups-collected').textContent = '3';
-        document.getElementById('survival-time').textContent = '45s';
+        // Initialize game from your existing game.js
+        if (typeof initGame === 'function') {
+            startGame();
+        }
     });
 
     // Handle Play Again button
@@ -189,10 +179,18 @@ $(document).ready(function() {
     document.getElementById('return-lobby-btn').addEventListener('click', function() {
         // Hide game over page
         document.getElementById('game-over-page').style.display = 'none';
-        // Show lobby
+        
+        // Show lobby container
         document.querySelector('.lobby-container').style.display = 'grid';
-        // Reset any necessary game states
+        
+        // Reset game state
         resetGameState();
+        
+        // Re-enable start game button if needed
+        const startGameBtn = document.getElementById('start-game-btn');
+        if (startGameBtn) {
+            startGameBtn.disabled = false;
+        }
     });
 
     function resetGameState() {
@@ -200,19 +198,14 @@ $(document).ready(function() {
         document.getElementById('damage-dealt').textContent = '0';
         document.getElementById('powerups-collected').textContent = '0';
         document.getElementById('survival-time').textContent = '0s';
-        // Add any other game state resets needed
+        
+        // Reset any other game states or variables here
+        // For example:
+        playerResults = playerResults.map(player => ({
+            ...player,
+            damageDealt: 0,
+            powerUpsCollected: 0,
+            survivalTime: 0
+        }));
     }
-
-    function startNewGame() {
-        // Hide game over page
-        document.getElementById('game-over-page').style.display = 'none';
-        // Reset game elements and start new game
-        // Add your game initialization logic here
-    }
-
-    // Handle Back to Menu button
-    document.getElementById('back-to-menu-btn').addEventListener('click', function() {
-        // Add your menu navigation logic here
-        window.location.href = '/menu'; // Adjust the path as needed
-    });
 });

@@ -38,7 +38,6 @@ body {
     bottom: 20px;
     right: 20px;
     z-index: 2000;
-    transform-origin: bottom right;
 }
 
 .music-button {
@@ -54,15 +53,28 @@ body {
     align-items: center;
     gap: 10px;
     position: relative;
-    opacity: 0.7;
+    z-index: 1;
 }
 
-.music-button .music-icon {
+.music-icon {
     font-size: 20px;
 }
 
+/* Active state (music on) */
+.music-button.active {
+    background: var(--button-background) !important;
+    border-color: var(--button-background) !important;
+}
+
+/* Inactive state (music off) */
+.music-button.inactive {
+    background: var(--field-background) !important;
+    border-color: var(--field-background) !important;
+    opacity: 0.7;
+}
+
 /* Slash for inactive state */
-.music-button::after {
+.music-button.inactive::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -71,28 +83,10 @@ body {
     height: 3px;
     background-color: var(--button-color);
     transform: translateY(-50%) rotate(-45deg);
-    opacity: 0; /* Hidden by default */
-    transition: all 0.3s ease;
+    z-index: 2;
 }
 
-/* Active state (music on) */
-.music-button.active {
-    background: var(--button-background);
-    border-color: var(--button-background);
-    opacity: 1;
-}
-
-/* Inactive state (music off) */
-.music-button:not(.active) {
-    background: var(--field-background);
-    border-color: var(--field-background);
-}
-
-.music-button:not(.active)::after {
-    opacity: 1; /* Show slash when inactive */
-}
-
-/* Hover states */
+/* Hover effects */
 .music-button:hover {
     transform: translateY(-2px);
 }
@@ -856,4 +850,18 @@ input, button {
     .game-over-container {
         transform: scale(3);
     }
+}
+
+#gameContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2c3e50, #4ca1af);
+}
+
+#gameCanvas {
+    width: 100%;
+    height: 100%;
 }
