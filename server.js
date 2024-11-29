@@ -46,6 +46,84 @@ const userSocketMap = new Map();
 // Add at the top level, before io.on("connection")
 const activeGames = new Map();
 
+const SPAWN_CONFIG = {
+    WEAPONS: {
+        interval: 5000,  // 5 seconds
+        types: ["DAGGER", "SWORD", "BOW"]
+    },
+    POWERUPS: {
+        interval: 10000,  // 10 seconds
+        types: ["HEALTH", "ATTACK", "SPEED"]
+    }
+};
+
+function startItemSpawning(roomId, io, game) {
+    // Weapon spawning
+    const weaponTimer = setInterval(() => {
+        if (!game.active) {
+            clearInterval(weaponTimer);
+            return;
+        }
+
+        const weaponType = SPAWN_CONFIG.WEAPONS.types[
+            Math.floor(Math.random() * SPAWN_CONFIG.WEAPONS.types.length)
+        ];
+
+        const weaponData = {
+            roomId,
+            type: weaponType,
+            weaponConfig: {
+                name: weaponType.toLowerCase(),
+                damage: weaponType === "DAGGER" ? 15 : weaponType === "SWORD" ? 25 : 35,
+                attackSpeed: weaponType === "DAGGER" ? 200 : weaponType === "SWORD" ? 400 : 500,
+                range: weaponType === "DAGGER" ? 30 : weaponType === "SWORD" ? 50 : 600,
+                isThrowable: weaponType === "DAGGER"
+            },
+            x: Math.floor(Math.random() * (750 - 50) + 50),
+            y: Math.floor(Math.random() * (500 - 50) + 50),
+            id: Date.now()
+        };
+
+        console.log('Emitting weapon spawn:', weaponData);
+        io.to(roomId).emit('weapon_spawned', weaponData);
+    }, SPAWN_CONFIG.WEAPONS.interval);
+
+
+    // Powerup spawning
+    const powerupTimer = setInterval(() => {
+        if (!game.active) {
+            clearInterval(powerupTimer);
+            return;
+        }
+
+        const powerupType = SPAWN_CONFIG.POWERUPS.types[
+            Math.floor(Math.random() * SPAWN_CONFIG.POWERUPS.types.length)
+        ];
+
+        const powerupData = {
+            roomId,
+            type: powerupType,
+            powerupConfig: {
+                name: powerupType.toLowerCase(),
+                effect: powerupType === 'HEALTH' ? 20 : 0,
+                multiplier: powerupType === 'ATTACK' ? 2 : powerupType === 'SPEED' ? 1.5 : 1,
+                duration: powerupType === 'ATTACK' ? 10000 : powerupType === 'SPEED' ? 8000 : 0
+            },
+            x: Math.floor(Math.random() * (750 - 50) + 50),
+            y: Math.floor(Math.random() * (500 - 50) + 50),
+            id: Date.now()
+        };
+
+        console.log('Emitting powerup spawn:', powerupData);
+        io.to(roomId).emit('powerup_spawned', powerupData);
+    }, SPAWN_CONFIG.POWERUPS.interval);
+
+    game.spawnTimers = {
+        weapon: weaponTimer,
+        powerup: powerupTimer
+    };
+}
+
 // Socket.IO connection handling
 io.on("connection", (socket) => {
     console.log('New socket connection:', socket.id);
@@ -103,7 +181,12 @@ io.on("connection", (socket) => {
             id: roomId,
             players: new Set(Object.keys(onlineUsers)), // Add all online users
             host: hostId,
-            started: false
+            started: false,
+            active: false,
+            spawnTimers: {
+                weapons: null,
+                powerups: null
+            }
         };
 
         // Store game in active games
@@ -130,6 +213,8 @@ io.on("connection", (socket) => {
             const game = activeGames.get(roomId);
             if (game) {
                 game.started = true;
+                game.active = true;
+
                 console.log('Available sockets:', {
                     sockets: Object.values(io.sockets.sockets).map(s => ({
                         id: s.id,
@@ -151,12 +236,76 @@ io.on("connection", (socket) => {
                         spawnPoint: index,
                     };
                 });
+
+                // Add each player's socket to the game room
+                playerAssignments.forEach(player => {
+                    const playerSocket = io.sockets.sockets.get(player.id);
+                    if (playerSocket) {
+                        playerSocket.join(roomId);
+                        console.log(`Player ${player.username} joined room ${roomId}`);
+                }
+                });
+
+                startItemSpawning(roomId, io, game);
+
                 io.emit('game_started', {
                     roomId: roomId,
                     hostId: hostId,
                     players: playerAssignments
 
                 });
+                // Start spawn timers
+                game.spawnTimers.weapons = setInterval(() => {
+                    if (game.active) {
+                        const weaponType = SPAWN_CONFIG.WEAPONS.types[Math.floor(Math.random() * SPAWN_CONFIG.WEAPONS.types.length)];
+                        const weaponData = {
+                            roomId,
+                            type: weaponType,
+                            weaponConfig: {
+                                name: weaponType.toLowerCase(),
+                                damage: weaponType === "DAGGER" ? 15 : weaponType === "SWORD" ? 25 : 35,
+                                attackSpeed: weaponType === "DAGGER" ? 200 : weaponType === "SWORD" ? 400 : 500,
+                                range: weaponType === "DAGGER" ? 30 : weaponType === "SWORD" ? 50 : 600,
+                                isThrowable: weaponType === "DAGGER"
+                            },
+                            x: Math.floor(Math.random() * (750 - 50) + 50),
+                            y: Math.floor(Math.random() * (500 - 50) + 50),
+                            id: Date.now()
+                        };
+                        
+                        // Emit to all clients in the room
+                        io.to(roomId).emit('weapon_spawned', weaponData);
+                    }
+                }, SPAWN_CONFIG.WEAPONS.interval);
+
+                game.spawnTimers.powerups = setInterval(() => {
+                    console.log('Powerup spawn tick:', {
+                        roomId,
+                        active: game.active,
+                        started: game.started
+                    });
+
+                    if (game.active) {
+                        const powerupType = SPAWN_CONFIG.POWERUPS.types[Math.floor(Math.random() * SPAWN_CONFIG.POWERUPS.types.length)];
+                        const powerupData = {
+                            roomId,
+                            type: powerupType,
+                            powerupConfig: {
+                                name: powerupType.toLowerCase(),
+                                effect: powerupType === "HEALTH" ? 20 : 0,
+                                multiplier: powerupType === "ATTACK" ? 2 : powerupType === "SPEED" ? 1.5 : 1,
+                                duration: powerupType === "ATTACK" ? 10000 : powerupType === "SPEED" ? 8000 : 0,
+                                color: powerupType === "HEALTH" ? 0xff0000 : powerupType === "ATTACK" ? 0xff6b00 : 0x00ff00
+                            },
+                            x: Math.floor(Math.random() * (750 - 50) + 50),
+                            y: Math.floor(Math.random() * (500 - 50) + 50),
+                            id: Date.now()
+                        };
+                        console.log('Emitting powerup spawn:', powerupData);
+                        io.to(roomId).emit('powerup_spawned', powerupData);
+                    }
+                }, SPAWN_CONFIG.POWERUPS.interval);
+
             }
         }, 2000);
     });
@@ -277,6 +426,13 @@ io.on("connection", (socket) => {
         }
     })
 
+    socket.on('weapon_collected', (data) => {
+        io.to(data.roomId).emit('weapon_collected', data);
+    });
+    
+    socket.on('powerup_collected', (data) => {
+        io.to(data.roomId).emit('powerup_collected', data);
+    });
     // Add this helper function
 })
 
@@ -463,21 +619,31 @@ app.get("/getStats/:username", (req, res) => {
 })
 
 // Add this endpoint to reload stats
-app.get("/reloadStats", (req, res) => {
+app.get('/reloadStats', (req, res) => {
     try {
-        // Clear require cache for users.json
-        delete require.cache[require.resolve("./data/users.json")];
-        
-        // Read fresh data from users.json
-        const data = fs.readFileSync("data/users.json", "utf8");
-        console.log("data", data);
-        
-        const users = JSON.parse(data);
-        
-        res.json({ status: "success" });
-    } catch (err) {
-        console.error("Error reloading stats:", err);
-        res.status(500).json({ status: "error", error: "Failed to reload stats" });
+        // Check if user is logged in
+        if (!req.session || !req.session.user) {
+            return res.status(401).json({ error: 'Not logged in' });
+        }
+
+        // Read the users file
+        const users = JSON.parse(fs.readFileSync("data/users.json"));
+        const username = req.session.user.username;
+
+        if (!users[username]) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Send back user stats
+        res.json({ 
+            user: {
+                username: username,
+                gameRecord: users[username].gameRecord
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

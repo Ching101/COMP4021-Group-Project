@@ -109,21 +109,44 @@ const Socket = (function () {
             }
         });
 
-        socket.on('weapon_spawned', (weaponData) => {
-            if (weaponData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
-                spawnWeapon.call(
-                    window.game.scene.scenes[0],
-                    weaponData.x,
-                    weaponData.y,
-                    WEAPONS[weaponData.type],
-                    weaponData.id
-                );
-            }
+        // Update the weapon_spawned handler to use .call() like powerups
+socket.on('weapon_spawned', (weaponData) => {
+    console.log('Received weapon spawn event:', weaponData);
+    if (weaponData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
+        console.log('Spawning weapon in game');
+        spawnWeapon.call(
+            window.game.scene.scenes[0],
+            weaponData.x,
+            weaponData.y,
+            weaponData.weaponConfig,
+            weaponData.id
+        );
+    } else {
+        console.log('Skipping weapon spawn:', {
+            expectedRoom: window.currentRoomId,
+            receivedRoom: weaponData.roomId,
+            gameReady: !!window.game?.scene?.scenes[0]
         });
+    }
+});
 
         socket.on('powerup_spawned', (powerupData) => {
-            if (window.game && window.game.scene.scenes[0]) {
-                spawnPowerup.call(window.game.scene.scenes[0], powerupData.x, powerupData.y, POWERUPS[powerupData.type.toUpperCase()]);
+            console.log('Received powerup spawn event:', powerupData);
+            if (powerupData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
+                console.log('Spawning powerup in game');
+                spawnPowerup.call(
+                    window.game.scene.scenes[0],
+                    powerupData.x,
+                    powerupData.y,
+                    powerupData.powerupConfig,
+                    powerupData.id
+                );
+            } else {
+                console.log('Skipping powerup spawn:', {
+                    expectedRoom: window.currentRoomId,
+                    receivedRoom: powerupData.roomId,
+                    gameReady: !!window.game?.scene?.scenes[0]
+                });
             }
         });
 
@@ -141,16 +164,16 @@ const Socket = (function () {
         });
 
         socket.on('player_movement', (moveData) => {
-            console.log('Received movement data:', moveData);
+            //console.log('Received movement data:', moveData);
 
             // Skip if it's our own movement
             if (moveData.id === socket.id) {
-                console.log('Skipping own movement update');
+                //console.log('Skipping own movement update');
                 return;
             }
 
             if (window.game && window.game.scene.scenes[0]) {
-                console.log('Handling movement update for player:', moveData.id);
+                //console.log('Handling movement update for player:', moveData.id);
                 handlePlayerUpdate(moveData);
             } else {
                 console.log('Game scene not ready for movement update');

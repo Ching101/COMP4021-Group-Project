@@ -50,37 +50,54 @@ const PlayerManager = {
 
     // Add custom play function to the sprite
     playerSprite.playAnimation = function(animationKey, loop = false) {
-        // If already playing this animation, don't restart it
-        if (this.currentAnim != animationKey){
-            this.currentAnim = animationKey;
-            this.setTexture(animationKey + '_1');
-        }
-        
-        
-        // Start animation loop if needed
-        if (loop && !this.animationTimer) {
-            let frame = 1;
-            const maxFrames = this.currentAnim.includes('Run') ? 7 : 
-                        this.currentAnim.includes('Jump') ? 13 : 
-                        this.currentAnim.includes('Hurt') ? 3 : 
-                        this.currentAnim.includes('Attack') ? 8 : 10;
-            
-            this.animationTimer = scene.time.addEvent({
-                delay: 100, // 10 fps
-                callback: () => {
-                    frame = frame % maxFrames + 1;
-                    const textureKey = `${this.currentAnim}_${frame}`;
-                    this.setTexture(textureKey);
-                    console.log(textureKey);
-                },
-                loop: true
-            });
-        } else if (!loop) {
-            // Stop any existing animation timer
+        // Debug logs for initial state
+        console.log('Starting animation:', {
+            animationKey,
+            loop,
+            currentAnim: this.currentAnim,
+            hasTimer: !!this.animationTimer
+        });
+    
+        if (!this.animationTimer || this.currentAnim !== animationKey) {
             if (this.animationTimer) {
                 this.animationTimer.destroy();
                 this.animationTimer = null;
             }
+            
+            this.currentAnim = animationKey;
+            this.currentFrame = 1;
+            
+            // Debug log for initial texture
+            const initialTexture = animationKey + '_1';
+            this.setTexture(initialTexture);
+            
+            this.maxFrames = this.currentAnim.includes('Run') ? 7 : 
+                        this.currentAnim.includes('Jump') ? 13 : 
+                        this.currentAnim.includes('Hurt') ? 3 : 
+                        this.currentAnim.includes('Attack') ? 8 : 10;
+    
+            
+    
+            
+                // Original looping animation logic
+                if (this.animationTimer) {
+                    this.animationTimer.destroy();
+                }
+                this.animationTimer = scene.time.addEvent({
+                    delay: 100, // 10 fps
+                    callback: () => {
+                        console.log('Looping animation frame');
+                        this.currentFrame++;
+                        if (this.currentFrame > this.maxFrames) {
+                            this.currentFrame = 1;
+                        }
+                        const textureKey = `${this.currentAnim}_${this.currentFrame}`;
+                        this.setTexture(textureKey);
+                        console.log(textureKey);
+                    },
+                    loop: true
+                });
+            
         }
     };
 
@@ -126,7 +143,6 @@ const config = {
     scene: {
         preload: preload,
         create: create,
-        //update: update
     }
 };
 
@@ -190,12 +206,13 @@ let debugText
 
 // 1. Add multiplayer state management
 const gameState = {
-    players: new Map(), // Track all players
-    weapons: new Map(), // Track weapons
-    powerups: new Map(), // Track powerups
+    players: new Map(),
+    weapons: new Map(),
+    powerups: new Map(),
     gameStarted: false,
     matchTimer: null,
-}
+    platforms: null
+};
 
 // 2. Define spawn points
 const SPAWN_POINTS = [
@@ -238,41 +255,52 @@ function preload() {
     // graphics.generateTexture("arrow", 20, 5)
 
     // Weapons
-    graphics.clear()
-    graphics.fillStyle(0xffff00)
-    graphics.fillRect(0, 0, 20, 8)
-    graphics.generateTexture("dagger", 20, 8)
+    // graphics.clear()
+    // graphics.fillStyle(0xffff00)
+    // graphics.fillRect(0, 0, 20, 8)
+    // graphics.generateTexture("dagger", 20, 8)
 
-    graphics.clear()
-    graphics.fillStyle(0xff0000)
-    graphics.fillRect(0, 0, 30, 10)
-    graphics.generateTexture("sword", 30, 10)
+    // graphics.clear()
+    // graphics.fillStyle(0xff0000)
+    // graphics.fillRect(0, 0, 30, 10)
+    // graphics.generateTexture("sword", 30, 10)
 
-    graphics.clear()
-    graphics.fillStyle(0x800080)
-    graphics.fillRect(0, 0, 25, 15)
-    graphics.generateTexture("bow", 25, 15)
+    // graphics.clear()
+    // graphics.fillStyle(0x800080)
+    // graphics.fillRect(0, 0, 25, 15)
+    // graphics.generateTexture("bow", 25, 15)
 
-    graphics.clear()
-    graphics.fillStyle(0x800080)
-    graphics.fillRect(0, 0, 20, 5)
-    graphics.generateTexture("arrow", 20, 5)
+    // graphics.clear()
+    // graphics.fillStyle(0x800080)
+    // graphics.fillRect(0, 0, 20, 5)
+    // graphics.generateTexture("arrow", 20, 5)
+
+    // Load weapon sprites
+    this.load.image('dagger', './assets/weapons/daggers.png');
+    this.load.image('sword', './assets/weapons/sword.png');
+    this.load.image('bow', './assets/weapons/bow.png');
+    this.load.image('arrow', './assets/weapons/arrow.png');
 
     // Powerups
-    graphics.clear()
-    graphics.fillStyle(0xff0000)
-    graphics.fillCircle(8, 8, 8)
-    graphics.generateTexture("powerup_health", 16, 16)
+    // graphics.clear()
+    // graphics.fillStyle(0xff0000)
+    // graphics.fillCircle(8, 8, 8)
+    // graphics.generateTexture("powerup_health", 16, 16)
 
-    graphics.clear()
-    graphics.fillStyle(0xff6b00)
-    graphics.fillCircle(8, 8, 8)
-    graphics.generateTexture("powerup_attack", 16, 16)
+    // graphics.clear()
+    // graphics.fillStyle(0xff6b00)
+    // graphics.fillCircle(8, 8, 8)
+    // graphics.generateTexture("powerup_attack", 16, 16)
 
-    graphics.clear()
-    graphics.fillStyle(0x00ff00)
-    graphics.fillCircle(8, 8, 8)
-    graphics.generateTexture("powerup_speed", 16, 16)
+    // graphics.clear()
+    // graphics.fillStyle(0x00ff00)
+    // graphics.fillCircle(8, 8, 8)
+    // graphics.generateTexture("powerup_speed", 16, 16)
+
+    // Load powerup sprites
+    this.load.image('powerup_health', './assets/powerups/health.png');
+    this.load.image('powerup_attack', './assets/powerups/attack.png');
+    this.load.image('powerup_speed', './assets/powerups/speed.png');
 
     // Ground (brown rectangle)
     graphics.fillStyle(0x966f33)
@@ -318,7 +346,7 @@ function create() {
     createGameWorld.call(this)
 
     // Initialize socket handlers
-    //initializeMultiplayerHandlers.call(this);
+    initializeMultiplayerHandlers.call(this);
 
     // Add player collisions
     this.physics.add.collider(
@@ -329,62 +357,117 @@ function create() {
     // Send ready signal
     const socket = Socket.getSocket()
     if (socket) {
-        socket.on("player_movement", (moveData) =>
+        // Bind the handler to this scene
+        this.handlePlayerMovement = function(moveData) {
+            if (!moveData || !moveData.id) return;
+            
+            const playerSprite = PlayerManager.players.get(moveData.id);
+            if (playerSprite && moveData.id !== socket.id) {
+                playerSprite.setPosition(moveData.x, moveData.y);
+                playerSprite.setVelocity(moveData.velocityX, moveData.velocityY);
+                playerSprite.direction = moveData.direction;
+
+                // Update animation if provided
+                if (moveData.animation) {
+                    playerSprite.playAnimation(moveData.animation);
+                }
+            }
+        };
+
+        // Now bind all socket listeners
+        socket.on("player_movement", (moveData) => 
             this.handlePlayerMovement(moveData)
-        )
-        socket.on("weapon_spawn", (weaponData) =>
-            this.handleWeaponSpawn(weaponData)
-        )
-        socket.on("powerup_spawn", (powerupData) =>
-            this.handlePowerupSpawn(powerupData)
-        )
-        socket.on("game_start", (gameData) => this.handleGameStart(gameData))
+        );
+
+        socket.on('weapon_spawned', (weaponData) => {
+            console.log('Received weapon spawn:', weaponData);
+            if (weaponData.roomId === gameState.roomId) {
+                spawnWeapon.call(
+                    this,
+                    weaponData.x,
+                    weaponData.y,
+                    weaponData.weaponConfig,
+                    weaponData.id
+                );
+            }
+        });
+
+        socket.on('weapon_collected', (data) => {
+            const weapon = gameState.weapons.get(data.weaponId);
+            if (weapon) {
+                gameState.weapons.delete(data.weaponId);
+                weapon.destroy();
+            }
+        });
+
+        socket.on('powerup_spawned', (powerupData) => {
+            console.log('Received powerup spawn:', powerupData);
+            if (powerupData.roomId === gameState.roomId) {
+                spawnPowerup.call(
+                    this,
+                    powerupData.x,
+                    powerupData.y,
+                    powerupData.powerupConfig,
+                    powerupData.id
+                );
+            }
+        });
+
+        socket.on('powerup_collected', (data) => {
+            const powerup = gameState.powerups.get(data.powerupId);
+            if (powerup) {
+                gameState.powerups.delete(data.powerupId);
+                powerup.destroy();
+            }
+        });
     }
-    // });
-    console.log('Scene created');
+    // Initialize game state
+    gameState.roomId = window.currentRoomId;
+    gameState.gameStarted = true;
+    
+    console.log('Game created with room ID:', gameState.roomId);
 }
 
 function createGameWorld() {
-    // Your existing platform creation code here
-    // Reference lines 103-209 from original game.js
-    // Create platforms group
+    // Create background
     const background = this.add
         .image(400, 300, "background")
-        .setDepth(-1) // Set background to lowest depth
-        .setDisplaySize(800, 600)
+        .setDepth(-1)
+        .setDisplaySize(800, 600);
 
-    platforms = this.physics.add.staticGroup()
+    // Create platforms group
+    platforms = this.physics.add.staticGroup();
+    gameState.platforms = platforms;  // Store in gameState
 
-    // Create main ground - moved lower
-    const ground = platforms.create(400, 580, "ground") // Changed from 568 to 580
-    ground.setDisplaySize(800, 64)
-    ground.refreshBody()
+    // Create main ground
+    const ground = platforms.create(400, 580, "ground");
+    ground.setDisplaySize(800, 64);
+    ground.refreshBody();
 
-    // Add floating platforms - adjusted heights
-    // Left platform
-    const platform1 = platforms.create(200, 450, "ground") // Changed from 400 to 450
-    platform1.setDisplaySize(200, 20)
-    platform1.refreshBody()
+    // Add floating platforms
+    const platform1 = platforms.create(200, 450, "ground");
+    platform1.setDisplaySize(200, 20);
+    platform1.refreshBody();
 
-    // Middle platform (higher)
-    const platform2 = platforms.create(400, 350, "ground") // Changed from 300 to 350
-    platform2.setDisplaySize(200, 20)
-    platform2.refreshBody()
+    const platform2 = platforms.create(400, 350, "ground");
+    platform2.setDisplaySize(200, 20);
+    platform2.refreshBody();
 
-    // Right platform
-    const platform3 = platforms.create(600, 450, "ground") // Changed from 400 to 450
-    platform3.setDisplaySize(200, 20)
-    platform3.refreshBody()
+    const platform3 = platforms.create(600, 450, "ground");
+    platform3.setDisplaySize(200, 20);
+    platform3.refreshBody();
 
-    // Small platforms for extra mobility
-    const smallPlatform1 = platforms.create(100, 250, "ground") // Changed from 200 to 250
-    smallPlatform1.setDisplaySize(100, 20)
-    smallPlatform1.refreshBody()
+    const platform4 = platforms.create(100, 250, "ground");
+    platform4.setDisplaySize(100, 20);
+    platform4.refreshBody();
 
-    const smallPlatform2 = platforms.create(700, 250, "ground") // Changed from 200 to 250
-    smallPlatform2.setDisplaySize(100, 20)
-    smallPlatform2.refreshBody()
+    const platform5 = platforms.create(700, 250, "ground");
+    platform5.setDisplaySize(100, 20);
+    platform5.refreshBody();
+
+    return platforms;
 }
+
 
 function initializeMultiplayerHandlers() {
     const scene = this
@@ -480,8 +563,6 @@ function setupPlayerControls(playerSprite) {
         callbackScope: this,
     })
 
-    // Start weapon and powerup spawning
-    startItemSpawning.call(this)
 }
 // function update() {
 //     if (!player) return;
@@ -570,6 +651,7 @@ function updateHealthBar() {
     healthBar.fillStyle(0x00ff00)
     healthBar.fillRect(10, 10, 200 * (player.health / 100), 20)
 }
+
 function basicAttack(pointer) {
     if (!currentWeapon) {
         // Visual feedback for no weapon
@@ -578,7 +660,7 @@ function basicAttack(pointer) {
                 fontSize: "16px",
                 fill: "#ff0000",
             })
-            .setOrigin(0.5)
+            .setOrigin(0.5);
 
         this.tweens.add({
             targets: text,
@@ -586,93 +668,260 @@ function basicAttack(pointer) {
             alpha: 0,
             duration: 1000,
             onComplete: () => text.destroy(),
-        })
-        return
+        });
+        return;
     }
 
-    if (player.attackCooldown) return
+    if (player.attackCooldown) return;
 
-    const time = this.time.now
-    if (time < player.lastAttackTime + currentWeapon.attackSpeed) return
+    const time = this.time.now;
+    if (time < player.lastAttackTime + currentWeapon.attackSpeed) return;
 
-    player.attackCooldown = true
-    player.lastAttackTime = time
+    player.attackCooldown = true;
+    player.lastAttackTime = time;
+
+    // Use our custom playAnimation instead of Phaser's play
+    // const attackAnim = `Player${player.number}_${player.direction}_Attack_${player.currentProp}`;
+    // player.playAnimation(attackAnim, false);  // false for non-looping attack animation
 
     // Handle different weapon types
     switch (currentWeapon.name) {
         case "bow":
-            chargeBow.call(this, pointer)
-            break
+            chargeBow.call(this, pointer);
+            break;
         case "dagger":
-            meleeAttack.call(this, currentWeapon.damage, currentWeapon.range)
-            break
+            meleeAttack.call(this, currentWeapon.damage, currentWeapon.range);
+            break;
         case "sword":
-            meleeAttack.call(this, currentWeapon.damage, currentWeapon.range)
-            break
+            meleeAttack.call(this, currentWeapon.damage, currentWeapon.range);
+            break;
     }
 
     // Reset attack cooldown
     this.time.delayedCall(currentWeapon.attackSpeed, () => {
-        player.attackCooldown = false
-    })
+        player.attackCooldown = false;
+        
+        // Return to idle state after attack
+        const idleAnim = `Player${player.number}_${player.direction}_Hurt_${player.currentProp}`;
+        player.setTexture(`${idleAnim}_3`);  // Use frame 3 for idle
+    });
 }
 
-function startItemSpawning() {
-    // Spawn weapons every 5 seconds
-    this.time.addEvent({
-        delay: 5000,
-        callback: () => {
-            spawnWeapon.call(this)
-        },
-        loop: true,
-    })
+// function startItemSpawning() {
+//     // Spawn weapons every 5 seconds
+//     this.time.addEvent({
+//         delay: 5000,
+//         callback: () => {
+//             const weaponTypes = Object.keys(WEAPONS);
+//             const randomType = weaponTypes[Math.floor(Math.random() * weaponTypes.length)];
+//             const weaponConfig = WEAPONS[randomType];
+            
+//             const x = Phaser.Math.Between(50, 750);
+//             const y = Phaser.Math.Between(50, 500);
+            
+//             // Generate unique ID for the weapon
+//             const id = Date.now();
+            
+//             // Emit weapon spawn event to server
+//             const socket = Socket.getSocket();
+//             if (socket) {
+//                 socket.emit('spawn_weapon', {
+//                     roomId: window.currentRoomId,
+//                     type: randomType,
+//                     weaponConfig: weaponConfig,
+//                     x: x,
+//                     y: y,
+//                     id: id
+//                 });
+//             }
+//         },
+//         loop: true,
+//     });
 
-    // Spawn powerups every 10 seconds
-    this.time.addEvent({
-        delay: 10000,
-        callback: () => {
-            spawnPowerup.call(this)
-        },
-        loop: true,
-    })
-}
+//     // Spawn powerups every 10 seconds
+//     this.time.addEvent({
+//         delay: 10000,
+//         callback: () => {
+//             const powerupTypes = Object.keys(POWERUPS);
+//             const randomType = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
+//             const powerupConfig = POWERUPS[randomType];
+            
+//             const x = Phaser.Math.Between(50, 750);
+//             const y = Phaser.Math.Between(50, 500);
+            
+//             // Generate unique ID for the powerup
+//             const id = Date.now();
+            
+//             // Emit powerup spawn event to server
+//             const socket = Socket.getSocket();
+//             if (socket) {
+//                 socket.emit('spawn_powerup', {
+//                     roomId: window.currentRoomId,
+//                     type: randomType,
+//                     powerupConfig: powerupConfig,
+//                     x: x,
+//                     y: y,
+//                     id: id
+//                 });
+//             }
+//         },
+//         loop: true,
+//     });
+// }
 
-function spawnWeapon() {
-    const weaponTypes = ["DAGGER", "SWORD", "BOW"]
-    const randomType =
-        weaponTypes[Math.floor(Math.random() * weaponTypes.length)]
-    const weaponConfig = WEAPONS[randomType]
+// Move spawnWeapon outside of config
 
-    const x = Phaser.Math.Between(50, 750)
-    const y = Phaser.Math.Between(50, 500)
+function spawnWeapon(x, y, weaponConfig, id) {
+    console.log('Spawning weapon:', { x, y, weaponConfig, id });
 
+    // Create the weapon sprite
     const weapon = this.physics.add.sprite(x, y, weaponConfig.name)
-    weapon.type = weaponConfig
+        .setScale(0.8)
+        .setDepth(1);
+
+    // Enable physics
+    this.physics.world.enable(weapon);
+    
+    // Set collision bounds
+    weapon.setCollideWorldBounds(true);
+    
+    // Add gravity
+    weapon.body.setGravity(0, 800);
+
+    // Store the weapon configuration and ID
+    weapon.type = weaponConfig;
+    weapon.id = id;
+
+    // Add collision with platforms
+    if (platforms) {
+        this.physics.add.collider(weapon, platforms);
+    }
+
+    // Define collectWeapon as a scene method
+    this.collectWeapon = function(playerSprite, weapon) {
+        if (!weapon.active) return;
+
+        const currentWeapon = weapon.type;
+        
+        // Update player's prop for animations
+        const weaponName = currentWeapon.name.charAt(0).toUpperCase() + currentWeapon.name.slice(1);
+        playerSprite.currentProp = weaponName;
+
+        // Remove weapon from game state
+        gameState.weapons.delete(weapon.id);
+
+        // Emit weapon collection to server
+        const socket = Socket.getSocket();
+        if (socket) {
+            socket.emit('weapon_collected', {
+                roomId: gameState.roomId,
+                weaponId: weapon.id,
+                playerId: socket.id
+            });
+        }
+
+        // Destroy the weapon sprite
+        weapon.destroy();
+
+        // Add collection feedback
+        const text = this.add
+            .text(playerSprite.x, playerSprite.y - 50, `Picked up ${currentWeapon.name}!`, {
+                fontSize: "16px",
+                fill: "#fff",
+            })
+            .setOrigin(0.5);
+
+        this.tweens.add({
+            targets: text,
+            y: text.y - 30,
+            alpha: 0,
+            duration: 1000,
+            onComplete: () => text.destroy(),
+        });
+    };
+
+    // Add overlap with all players
+    PlayerManager.players.forEach(playerSprite => {
+        this.physics.add.overlap(
+            playerSprite, 
+            weapon, 
+            this.collectWeapon, 
+            null, 
+            this
+        );
+    });
+
+    // Store weapon in game state
+    gameState.weapons.set(id, weapon);
+
+    return weapon;
+}
+
+
+
+
+
+// Update spawnPowerup function
+function spawnPowerup(x, y, powerupConfig, id) {
+    // Add safety check for powerupConfig
+    if (!powerupConfig) {
+        console.error('Invalid powerup config:', powerupConfig);
+        return;
+    }
+
+    console.log('Spawning powerup:', { x, y, powerupConfig, id });
+
+    const powerup = this.physics.add.sprite(x, y, `powerup_${powerupConfig.name}`)
+        .setScale(0.6)
+        .setDepth(1);
+
+    // Store the powerup configuration and ID
+    powerup.type = powerupConfig;  // Changed from config to powerupConfig
+    powerup.id = id;
 
     // Add collision with player
-    this.physics.add.overlap(player, weapon, collectWeapon, null, this)
-
-    // Add collision with ground
-    this.physics.add.collider(weapon, platforms)
+    this.physics.add.overlap(player, powerup, collectPowerup, null, this);
+    this.physics.add.collider(powerup, platforms);
 }
 
-function collectWeapon(player, weapon) {
-    // Drop current weapon if holding one
+function collectPowerup(player, powerup) {
+    if (!powerup.type) return;
 
-    currentWeapon = weapon.type
-    weapon.destroy()
+    const socket = Socket.getSocket();
+    if (socket) {
+        socket.emit('powerup_collected', {
+            roomId: gameState.roomId,
+            powerupId: powerup.id,
+            playerId: socket.id
+        });
+    }
 
-    // Update player's prop for animations
-    const weaponName = currentWeapon.name.charAt(0).toUpperCase() + currentWeapon.name.slice(1);
-    player.currentProp = weaponName;  // Update the prop to match new weapon
-    
-    // Add text feedback
+    switch (powerup.type.name) {
+        case "health":
+            player.health = Math.min(player.health + powerup.type.effect, 100);
+            updateHealthBar.call(this);
+            break;
+        case "attack":
+            player.attackMultiplier = (player.attackMultiplier || 1) * powerup.type.multiplier;
+            this.time.delayedCall(powerup.type.duration, () => {
+                player.attackMultiplier = (player.attackMultiplier || 2) / powerup.type.multiplier;
+            });
+            break;
+        case "speed":
+            player.speedMultiplier = (player.speedMultiplier || 1) * powerup.type.multiplier;
+            this.time.delayedCall(powerup.type.duration, () => {
+                player.speedMultiplier = (player.speedMultiplier || 1.5) / powerup.type.multiplier;
+            });
+            break;
+    }
+
+    // Add collection feedback
     const text = this.add
-        .text(player.x, player.y - 50, `Picked up ${currentWeapon.name}!`, {
+        .text(player.x, player.y - 50, `Collected ${powerup.type.name}!`, {
             fontSize: "16px",
             fill: "#fff",
         })
-        .setOrigin(0.5)
+        .setOrigin(0.5);
 
     this.tweens.add({
         targets: text,
@@ -680,73 +929,9 @@ function collectWeapon(player, weapon) {
         alpha: 0,
         duration: 1000,
         onComplete: () => text.destroy(),
-    })
+    });
 
-    // Emit weapon pickup to other players if needed
-    const socket = Socket.getSocket();
-    if (socket) {
-        socket.emit('weapon_pickup', {
-            roomId: gameState.roomId,
-            playerId: player.id,
-            weapon: weaponName
-        });
-    }
-
-    console.log(`Collected weapon: ${weapon.type.name}`) // Debug log
-}
-
-function spawnPowerup() {
-    const powerupTypes = ["HEALTH", "ATTACK", "SPEED"]
-    const randomType =
-        powerupTypes[Math.floor(Math.random() * powerupTypes.length)]
-    const powerupConfig = POWERUPS[randomType]
-
-    const x = Phaser.Math.Between(50, 750)
-    const y = Phaser.Math.Between(50, 500)
-
-    const powerup = this.physics.add.sprite(
-        x,
-        y,
-        `powerup_${powerupConfig.name}`
-    )
-    powerup.type = powerupConfig
-
-    // Add collision with player
-    this.physics.add.overlap(player, powerup, collectPowerup, null, this)
-
-    // Add collision with ground
-    this.physics.add.collider(powerup, platforms)
-}
-
-function collectPowerup(player, powerup) {
-    const type = powerup.type
-
-    switch (type.name) {
-        case "health":
-            player.health = Math.min(player.health + type.effect, 100)
-            updateHealthBar.call(this)
-            break
-        case "attack":
-            player.attackMultiplier =
-                (player.attackMultiplier || 1) * type.multiplier
-            this.time.delayedCall(type.duration, () => {
-                player.attackMultiplier =
-                    (player.attackMultiplier || 2) / type.multiplier
-            })
-            break
-        case "speed":
-            player.speedMultiplier =
-                (player.speedMultiplier || 1) * type.multiplier
-            this.time.delayedCall(type.duration, () => {
-                player.speedMultiplier =
-                    (player.speedMultiplier || 1.5) / type.multiplier
-            })
-            break
-    }
-
-    powerup.destroy()
-
-    console.log(`Collected powerup: ${powerup.type.name}`) // Debug log
+    powerup.destroy();
 }
 
 function endMatch() {
@@ -755,10 +940,11 @@ function endMatch() {
 
 function meleeAttack(damage, range) {
     // Create attack hitbox
-    const direction = player.direction === "left" ? -1 : 1
+    const direction = player.direction === "left" ? -1 : 1;
 
-    // Stop movement during attack
-    player.setVelocityX(0);
+    // Set attacking state and stop movement
+    // player.isAttacking = true;
+    // player.setVelocityX(0);
 
     const hitbox = this.add.rectangle(
         player.x + range * direction,
@@ -767,20 +953,23 @@ function meleeAttack(damage, range) {
         40,
         0xff0000,
         0.2
-    )
+    );
 
     // Get the correct animation key based on current weapon
     const prop = player.currentProp || 'Bare';
     const attackAnim = `Player${player.number}_${player.direction}_Attack_${prop}`;
     
     // Play attack animation (not looping)
-    player.playAnimation(attackAnim, false);
+    player.playAnimation(attackAnim, true);  // false for non-looping attack animation
     
-    // Set timer to end attack state
-    player.scene.time.delayedCall(500, () => {  // Adjust timing based on weapon
+    // Use a separate timer to track attack state
+    this.time.delayedCall(800, () => {  // 800ms = roughly the duration of attack animation
         player.isAttacking = false;
+        hitbox.destroy();
+        
         // Return to idle state
-        player.setTexture(`Player${player.number}_${player.direction}_Hurt_${prop}_3`);
+        const idleAnim = `Player${player.number}_${player.direction}_Hurt_${prop}`;
+        player.setTexture(`${idleAnim}_3`);  // Use frame 3 for idle
     });
 
     // Emit attack event for multiplayer if needed
@@ -791,10 +980,8 @@ function meleeAttack(damage, range) {
             id: socket.id,
             direction: player.direction,
             prop: prop
-    });
-}
-    // Remove hitbox after brief moment
-    this.time.delayedCall(100, () => hitbox.destroy())
+        });
+    }
 }
 
 function throwDagger(pointer) {
@@ -1365,63 +1552,6 @@ function loadCharacterSprites(scene, playerData) {
     return `Player${playerNumber}_right_Hurt_Bare_3`;
 }
 
-function basicAttack(pointer) {
-    if (!currentWeapon) {
-        // Visual feedback for no weapon
-        const text = this.add
-            .text(player.x, player.y - 50, "No weapon!", {
-                fontSize: "16px",
-                fill: "#ff0000",
-            })
-            .setOrigin(0.5);
-
-        this.tweens.add({
-            targets: text,
-            y: text.y - 30,
-            alpha: 0,
-            duration: 1000,
-            onComplete: () => text.destroy(),
-        });
-        return;
-    }
-
-    if (player.attackCooldown) return;
-
-    const time = this.time.now;
-    if (time < player.lastAttackTime + currentWeapon.attackSpeed) return;
-
-    player.attackCooldown = true;
-    player.lastAttackTime = time;
-
-    // Play the appropriate attack animation based on weapon type
-    const attackAnim = `player${player.number}_${player.direction}_attack_${currentWeapon.name}`;
-    player.play(attackAnim).once('animationcomplete', () => {
-        // Return to run/idle animation after attack
-        if (player.body.velocity.x !== 0) {
-            player.play(`player${player.number}_${player.direction}_run`);
-        } else {
-            player.play(`player${player.number}_${player.direction}_idle`);
-        }
-    });
-
-    // Handle different weapon types
-    switch (currentWeapon.name) {
-        case "bow":
-            chargeBow.call(this, pointer);
-            break;
-        case "dagger":
-            meleeAttack.call(this, currentWeapon.damage, currentWeapon.range);
-            break;
-        case "sword":
-            meleeAttack.call(this, currentWeapon.damage, currentWeapon.range);
-            break;
-    }
-
-    // Reset attack cooldown
-    this.time.delayedCall(currentWeapon.attackSpeed, () => {
-        player.attackCooldown = false;
-    });
-}
 
 function handlePlayerHurt(player) {
     const hurtAnim = `Player${player.number}_${player.direction}_Hurt_${player.currentProp}`;
