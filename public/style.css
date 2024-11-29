@@ -38,7 +38,6 @@ body {
     bottom: 20px;
     right: 20px;
     z-index: 2000;
-    transform-origin: bottom right;
 }
 
 .music-button {
@@ -54,15 +53,27 @@ body {
     align-items: center;
     gap: 10px;
     position: relative;
-    opacity: 0.7;
 }
 
-.music-button .music-icon {
+.music-icon {
     font-size: 20px;
 }
 
+/* Active state (music on) */
+.music-button.active {
+    background: var(--button-background);
+    border-color: var(--button-background);
+}
+
+/* Inactive state (music off) */
+.music-button:not(.active) {
+    background: var(--field-background);
+    border-color: var(--field-background);
+    opacity: 0.7;
+}
+
 /* Slash for inactive state */
-.music-button::after {
+.music-button:not(.active)::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -71,28 +82,9 @@ body {
     height: 3px;
     background-color: var(--button-color);
     transform: translateY(-50%) rotate(-45deg);
-    opacity: 0; /* Hidden by default */
-    transition: all 0.3s ease;
 }
 
-/* Active state (music on) */
-.music-button.active {
-    background: var(--button-background);
-    border-color: var(--button-background);
-    opacity: 1;
-}
-
-/* Inactive state (music off) */
-.music-button:not(.active) {
-    background: var(--field-background);
-    border-color: var(--field-background);
-}
-
-.music-button:not(.active)::after {
-    opacity: 1; /* Show slash when inactive */
-}
-
-/* Hover states */
+/* Hover effects */
 .music-button:hover {
     transform: translateY(-2px);
 }
@@ -857,3 +849,64 @@ input, button {
         transform: scale(3);
     }
 }
+
+#gameContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2c3e50, #4ca1af);
+}
+
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+.rankings-container {
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 800px;
+}
+
+.rankings-table {
+    width: 100%;
+    color: #fff;
+}
+
+.rankings-header {
+    display: grid;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.player-rank {
+    display: grid;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr;
+    padding: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.3s;
+}
+
+.player-rank:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.player-rank.current-player {
+    background: rgba(46, 204, 113, 0.2);
+}
+
+.rank {
+    text-align: center;
+}
+
+.rank-1 { color: gold; }
+.rank-2 { color: silver; }
+.rank-3 { color: #cd7f32; }
