@@ -14,5 +14,21 @@
       "wins": 0,
       "losses": 0
     }
+  },
+  "peter": {
+    "username": "peter",
+    "password": "$2b$10$fByfOO09Bisvb0nCT7rBNe8hEJ4ccfvo8/WFqLw6qCTlC.0yXRZRW",
+    "gameRecord": {
+      "wins": 0,
+      "losses": 0
+    }
+  },
+  "venus": {
+    "username": "venus",
+    "password": "$2b$10$jPy/CDsRjtKMkB3M1EvnYu54Oni90IxFjN9TTbdF8DpWMyueTlPoa",
+    "gameRecord": {
+      "wins": 0,
+      "losses": 0
+    }
   }
 }

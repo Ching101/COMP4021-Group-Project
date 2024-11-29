@@ -24,18 +24,18 @@ $(document).ready(function() {
     });
 
     // Handle Start Game button
-    $('#start-game-btn').on('click', function() {
-        // Hide lobby container
-        $('.lobby-container').hide();
+    // $('#start-game-btn').on('click', function() {
+    //     // Hide lobby container
+    //     $('.lobby-container').hide();
 
-        $('#game-over-page').show();
+    //     $('#game-over-page').show();
         
-        // Show game container
-        $('#gameContainer').show();
+    //     // Show game container
+    //     $('#gameContainer').show();
         
-        // Initialize and start the game
-        initGame();
-    });
+    //     // Initialize and start the game
+    //     startgame();
+    // });
 
     // Handle Return to Lobby button
     $('#return-lobby-btn-2').on('click', function() {
@@ -64,10 +64,10 @@ $(document).ready(function() {
     // Start auto-refreshing stats when in lobby
     GameStats.startAutoRefresh();
 
-    // Stop refreshing when game starts
-    Socket.on('game_started', () => {
-        GameStats.stopAutoRefresh();
-    });
+    // // Stop refreshing when game starts
+    // Socket.on('game_started', () => {
+    //     GameStats.stopAutoRefresh();
+    // });
 
     // Resume refreshing when returning to lobby
     $('#return-lobby-btn, #return-lobby-btn-2').on('click', () => {

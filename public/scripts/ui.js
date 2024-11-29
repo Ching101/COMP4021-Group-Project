@@ -1,6 +1,7 @@
 const SignInForm = (function () {
     // This function initializes the UI
     const initialize = function () {
+        GameLobby.initialize()
         // Hide it
         $("#signin-overlay").hide()
 
@@ -327,7 +328,7 @@ const initializeInstructionsPopup = function () {
 const GameLobby = (function () {
     const initialize = function () {
         // Event handler for the start button
-        $('.start-button').on('click', function () {
+        $('#start-game-btn').on('click', function () {
             // Only proceed if button is not disabled
             if (!$(this).hasClass('disabled')) {
                 // Get the socket connection

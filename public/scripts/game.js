@@ -59,9 +59,10 @@ const config = {
     scene: {
         preload: preload,
         create: create,
-        // update: update
-    },
-}
+        //update: update
+    }
+};
+
 
 // Game state variables
 let player
@@ -242,6 +243,7 @@ function create() {
         socket.on("game_start", (gameData) => this.handleGameStart(gameData))
     }
     // });
+    console.log('Scene created');
 }
 
 function createGameWorld() {
@@ -925,9 +927,11 @@ function startGame(gameData, socketId) {
     gameState.roomId = gameData.roomId
 
     // Initialize Phaser game if not already created
-    if (!window.game) {
+    if (!window.game.scene) {
+        console.log('Creating new Phaser game instance');
         // Add scene ready callback
         config.scene.create = function () {
+            console.log('Scene create function called');
             // Call original create function
             create.call(this)
 
@@ -937,30 +941,44 @@ function startGame(gameData, socketId) {
         }
         window.game = new Phaser.Game(config)
     } else {
-        // If game exists, restart the scene
-        window.game.scene.scenes[0].scene.restart()
-
-        // Wait for scene to be ready
-        window.game.scene.scenes[0].events.once("create", function () {
-            console.log("Scene restarted, spawning players")
-            spawnAllPlayers.call(this, gameData.players)
-        })
+        //console.log(window.game)
+        console.log('Phaser game instance already exists');
+        // If game exists, check if the scene is active
+        const currentScene = window.game.scene.scenes[0];
+        if (currentScene) {
+            console.log('Current scene found:', currentScene);
+            if (currentScene.isActive) {
+                console.log('Restarting active scene');
+                // Restart the scene
+                currentScene.scene.restart();
+                // Wait for scene to be ready
+                currentScene.events.once('create', function () {
+                    console.log('Scene restarted, spawning players');
+                    spawnAllPlayers.call(this, gameData.players);
+                });
+            } else {
+                console.error('Game scene is not active');
+                return; // Exit if the scene is not ready
+            }
+        } else {
+            console.error('No current scene found');
+            return; // Exit if no scene is found
+        }
     }
+
     // Reset game state
-    gameState.gameStarted = true
-    gameState.players.clear()
-    gameState.weapons.clear()
-    gameState.powerups.clear()
-    console.log("isActive", window.game?.scene?.scenes[0]?.isActive)
-    // Spawn all players with their assignments
-    if (window.game?.scene?.scenes[0]?.isActive) {
-        // Pass player assignments to the scene
-        console.log("Game data before spawning players:", gameData)
-        spawnAllPlayers.call(
-            window.game.scene.scenes[0],
-            gameData.players,
-            socketId
-        )
+    gameState.gameStarted = true;
+    gameState.players.clear();
+    gameState.weapons.clear();
+    gameState.powerups.clear();
+    console.log('Game state reset');
+
+    // Check if the scene is active before spawning players
+    const activeScene = window.game?.scene?.scenes[0];
+    console.log('Is active scene:', activeScene?.isActive);
+    if (activeScene?.isActive) {
+        console.log('Game data before spawning players:', gameData);
+        spawnAllPlayers.call(activeScene, gameData.players, socketId);
     }
 
     // Start match timer (3 minutes)
@@ -969,6 +987,7 @@ function startGame(gameData, socketId) {
     }, 180000)
     console.log("Game started in room:", gameData.roomId)
 }
+
 function spawnAllPlayers(playerAssignments, socketId) {
     // Clear existing players
     PlayerManager.players.clear()

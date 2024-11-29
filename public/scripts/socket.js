@@ -94,10 +94,13 @@ const Socket = (function () {
 
             // Hide lobby and show game for all players
             $('.lobby-container').hide();
-            $('#game').show();
+            $('#gameContainer').show();
 
             // Initialize game with complete game data
             startGame(gameData);
+
+            // Stop refreshing when game starts
+            GameStats.stopAutoRefresh();
         });
 
         socket.on('player_ready', (playerData) => {
