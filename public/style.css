@@ -911,3 +911,105 @@ input, button {
 .rank-1 { color: gold; }
 .rank-2 { color: silver; }
 .rank-3 { color: #cd7f32; }
+
+.weapon-icon, .powerup-icon {
+    width: 32px;
+    height: 32px;
+    display: block;
+    margin: 0 auto 8px auto;
+    image-rendering: pixelated;
+}
+
+.weapons-list, .powerups-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 0;
+    list-style: none;
+    margin: 20px 0;
+}
+
+.weapons-list li, .powerups-list li {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.weapons-list li:hover, .powerups-list li:hover {
+    transform: translateY(-2px);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.weapon, .powerup {
+    font-weight: bold;
+    color: var(--button-color);
+    display: block;
+    margin-bottom: 5px;
+}
+
+.controls-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 0;
+    list-style: none;
+    margin: 20px 0;
+}
+
+.controls-list li {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.controls-list li:hover {
+    transform: translateY(-2px);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.control-icon {
+    width: 48px;
+    height: 48px;
+    display: block;
+    margin: 0 auto 8px auto;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+}
+
+.control {
+    font-weight: bold;
+    color: var(--button-color);
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Adjust existing styles to match */
+.weapon-icon, .powerup-icon, .control-icon {
+    image-rendering: pixelated;
+    transition: transform 0.2s;
+}
+
+.weapon-icon:hover, .powerup-icon:hover, .control-icon:hover {
+    transform: scale(1.1);
+}
+
+.victory-icon {
+    width: 48px;
+    height: 48px;
+    display: block;
+    margin: 0 auto 8px auto;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+}
+
+/* Update the existing styles to include victory-icon */
+.weapon-icon, .powerup-icon, .control-icon, .victory-icon {
+    image-rendering: pixelated;
+    transition: transform 0.2s;
+}
+
+.weapon-icon:hover, .powerup-icon:hover, .control-icon:hover, .victory-icon:hover {
+    transform: scale(1.1);
+}
