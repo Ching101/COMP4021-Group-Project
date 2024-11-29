@@ -306,13 +306,22 @@ const initializeInstructionsPopup = function () {
 
 const GameLobby = (function () {
     const initialize = function () {
-        // Start game button handler
+        // Event handler for the start button
         $('.start-button').on('click', function () {
+            // Only proceed if button is not disabled
             if (!$(this).hasClass('disabled')) {
-                Socket.getSocket().emit('start_game');
-                $('.lobby-container').hide();
-                $('#game').show();
-                startGame();
+                // Get the socket connection
+                const socket = Socket.getSocket();
+                if (!socket) {
+                    console.error('No socket connection available');
+                    return;
+                }
+
+                console.log('Emitting start_game_request with socket:', socket.id);
+                socket.emit('start_game_request');
+
+                $(this).prop('disabled', true);
+                $(this).text('Starting game...');
             }
         });
     }

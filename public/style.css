@@ -118,7 +118,7 @@ body {
     width: 400px;
     text-align: center;
     box-shadow: 0 0 30px var(--glow-color),
-                inset 0 0 20px rgba(0,0,0,0.3);
+        inset 0 0 20px rgba(0, 0, 0, 0.3);
     animation: glow 2s infinite alternate;
 }
 
@@ -126,6 +126,7 @@ body {
     from {
         box-shadow: 0 0 20px var(--glow-color);
     }
+
     to {
         box-shadow: 0 0 30px var(--glow-color);
     }
@@ -154,19 +155,22 @@ body {
 /* Specific breakpoints for common resolutions */
 @media screen and (min-width: 1920px) {
     .lobby-container {
-        transform: scale(1.5);  /* Scale up for 1920x1080 */
+        transform: scale(1.5);
+        /* Scale up for 1920x1080 */
     }
 }
 
 @media screen and (min-width: 2560px) {
     .lobby-container {
-        transform: scale(2);    /* Scale up for 2560x1440 */
+        transform: scale(2);
+        /* Scale up for 2560x1440 */
     }
 }
 
 @media screen and (min-width: 3840px) {
     .lobby-container {
-        transform: scale(3);    /* Scale up for 4K */
+        transform: scale(3);
+        /* Scale up for 4K */
     }
 }
 
@@ -207,7 +211,7 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3);
 }
 
 .online-user:hover {
@@ -226,6 +230,7 @@ body {
     from {
         box-shadow: 0 0 10px var(--glow-color);
     }
+
     to {
         box-shadow: 0 0 20px var(--glow-color);
     }
@@ -321,7 +326,7 @@ body {
     border-radius: var(--border-radius);
     text-align: center;
     transition: all 0.3s ease;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
     font-size: 14px;
     line-height: 1.3;
 }
@@ -373,6 +378,7 @@ body {
     from {
         box-shadow: 0 0 20px var(--glow-color);
     }
+
     to {
         box-shadow: 0 0 30px var(--glow-color);
     }
@@ -535,7 +541,7 @@ input::placeholder {
     border-radius: var(--border-radius);
     text-align: center;
     transition: all 0.3s ease;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
     line-height: 1.5;
 }
 
@@ -622,12 +628,12 @@ input::placeholder {
     body {
         align-items: flex-start;
     }
-    
+
     .lobby-container {
         transform: scale(0.9);
         transform-origin: top center;
     }
-    
+
     .music-toggle-container {
         transform: scale(0.9);
     }
@@ -650,7 +656,8 @@ input::placeholder {
 }
 
 /* Common styles for all popup content */
-.popup-content, .auth-container {
+.popup-content,
+.auth-container {
     position: relative;
     background: var(--field-background);
     border: 4px solid var(--button-background);
@@ -672,26 +679,34 @@ input::placeholder {
 
 /* Scaling for different screen sizes */
 @media screen and (min-width: 1920px) {
-    .popup-content, .auth-container {
+
+    .popup-content,
+    .auth-container {
         transform: scale(1.5);
     }
 }
 
 @media screen and (min-width: 2560px) {
-    .popup-content, .auth-container {
+
+    .popup-content,
+    .auth-container {
         transform: scale(2);
     }
 }
 
 @media screen and (min-width: 3840px) {
-    .popup-content, .auth-container {
+
+    .popup-content,
+    .auth-container {
         transform: scale(3);
     }
 }
 
 /* For smaller screens */
 @media screen and (max-width: 1024px) or (max-height: 768px) {
-    .popup-content, .auth-container {
+
+    .popup-content,
+    .auth-container {
         transform: scale(0.9);
     }
 }
@@ -710,7 +725,8 @@ input::placeholder {
 }
 
 /* Ensure form elements scale properly */
-input, button {
+input,
+button {
     transform-origin: center;
 }
 
@@ -730,9 +746,10 @@ input, button {
     from {
         text-shadow: 0 0 10px var(--glow-color);
     }
+
     to {
         text-shadow: 0 0 20px var(--glow-color),
-                     0 0 30px var(--glow-color);
+            0 0 30px var(--glow-color);
     }
 }
 
