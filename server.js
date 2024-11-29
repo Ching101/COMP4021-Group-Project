@@ -73,37 +73,37 @@ io.on("connection", (socket) => {
     })
 
     // Add after line 74
-    let activeGames = new Map();
+    let activeGames = new Map()
 
     // Inside io.on("connection") after line 74
-    socket.on('start_game', () => {
-        const roomId = generateRoomId();
+    socket.on("start_game", () => {
+        const roomId = generateRoomId()
         const game = {
             id: roomId,
             players: new Set(),
-            started: false
-        };
+            started: false,
+        }
 
-        activeGames.set(roomId, game);
+        activeGames.set(roomId, game)
 
         // Notify all connected players to start the game
-        io.emit('game_started', {
+        io.emit("game_started", {
             roomId: roomId,
-            players: Array.from(onlineUsers)
-        });
-    });
+            players: Array.from(onlineUsers),
+        })
+    })
 
-    socket.on('player_ready', (playerData) => {
-        const game = activeGames.get(playerData.roomId);
+    socket.on("player_ready", (playerData) => {
+        const game = activeGames.get(playerData.roomId)
         if (game) {
-            game.players.add(playerData.id);
-            socket.broadcast.emit('player_ready', playerData);
+            game.players.add(playerData.id)
+            socket.broadcast.emit("player_ready", playerData)
         }
-    });
+    })
 
     // Add this helper function
     function generateRoomId() {
-        return Math.random().toString(36).substring(2, 15);
+        return Math.random().toString(36).substring(2, 15)
     }
 })
 
@@ -130,7 +130,16 @@ app.post("/register", (req, res) => {
 
     // Read users file
     try {
-        const users = JSON.parse(fs.readFileSync("data/users.json"))
+        // Initialize users object if file is empty or doesn't exist
+        let users = {}
+        try {
+            const data = fs.readFileSync("data/users.json", "utf8")
+            if (data.trim()) {
+                users = JSON.parse(data)
+            }
+        } catch (err) {
+            // If file doesn't exist or is empty, continue with empty users object
+        }
 
         // Check if username exists
         if (username in users) {
@@ -156,6 +165,7 @@ app.post("/register", (req, res) => {
 
         res.json({ status: "success" })
     } catch (err) {
+        console.error("Registration error:", err)
         res.json({ status: "error", error: "Error accessing user database" })
     }
 })
