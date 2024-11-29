@@ -1073,3 +1073,60 @@ button {
 .weapon-icon:hover, .powerup-icon:hover, .control-icon:hover, .victory-icon:hover {
     transform: scale(1.1);
 }
+
+#cheat-indicator {
+    font-family: "Abel", sans-serif;
+    font-weight: bold;
+    z-index: 9999;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+#cheat-menu {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(44, 62, 80, 0.95);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    transform: none;
+}
+
+.cheat-menu-content {
+    min-width: 200px;
+}
+
+.cheat-menu-content h3 {
+    color: #ecf0f1;
+    margin: 0 0 15px 0;
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.cheat-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cheat-options label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ecf0f1;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.cheat-options input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
