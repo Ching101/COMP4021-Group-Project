@@ -43,6 +43,8 @@ const PlayerManager = {
         playerSprite.attackMultiplier = 1;
         playerSprite.speedMultiplier = 1;
         playerSprite.setCollideWorldBounds(true);
+        playerSprite.setDebugBodyColor(0, 0, 0, 0); // Make physics body invisible
+        
 
         // Add update listener to keep name label with player
         scene.events.on('update', () => {
@@ -295,7 +297,7 @@ const config = {
         default: "arcade",
         arcade: {
             gravity: { y: 800 },
-            debug: true,
+            debug: false,
         },
     },
     scene: {
@@ -1398,7 +1400,7 @@ function meleeAttack(damage, range) {
         range,
         40,
         0xff0000,
-        0.2
+        0
     );
 
     // Check for collision with other players
@@ -1502,7 +1504,7 @@ function throwDagger(pointer) {
     projectile.rotation = direction === -1 ? Math.PI : 0
 
     // Add debug visualization
-    if (debugText) {
+    if (false &&debugText) {
         const throwPath = this.add.graphics()
         throwPath.lineStyle(1, 0xffff00, 0.5)
         this.time.addEvent({
@@ -1658,7 +1660,7 @@ function fireArrow(pointer, power) {
     })
 
     // Add debug visualization of arrow path
-    if (debugText) {
+    if (false && debugText) {
         const arrowPath = this.add.graphics()
         arrowPath.lineStyle(1, 0xff0000, 0.5)
         arrowPath.beginPath()
