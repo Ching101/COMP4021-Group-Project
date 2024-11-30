@@ -33,8 +33,8 @@ const GameStats = (function () {
             }
 
             // Only proceed if we have valid stats data
-            if (data.stats) {
-                const stats = data.stats;
+            if (data.user && data.user.gameRecord) {
+                const stats = data.user.gameRecord;
                 const winRate = calculateWinRate(stats.wins, stats.losses);
                 
                 // Update user panel stats
