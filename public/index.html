@@ -1,345 +1,283 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Arena Warriors</title>
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-        <link
-            href="https://fonts.googleapis.com/icon?family=Material+Icons"
-            rel="stylesheet"
-        />
-        <link href="style.css" rel="stylesheet" />
-    </head>
-    <body>
-        <!-- Add this at the top of the body -->
-        <div class="music-toggle-container">
-            <button class="music-button">
-                <span class="music-icon">♫</span>
-                Music
+
+<head>
+    <title>Arena Warriors</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="style.css" rel="stylesheet" />
+</head>
+
+<body>
+    <!-- Add this at the top of the body -->
+    <div class="music-toggle-container">
+        <button class="music-button">
+            <span class="music-icon">♫</span>
+            Music
+        </button>
+    </div>
+
+    <!-- Update the lobby structure -->
+    <div class="lobby-container">
+        <div class="connected-players">
+            <h2>Connected Players</h2>
+            <div id="online-users-area"></div>
+        </div>
+
+        <div class="right-column">
+            <div class="game-stats">
+                <h2>Your Stats</h2>
+                <div class="stat-row">
+                    <span>Total Games:</span>
+                    <span id="total-games">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Win Rate:</span>
+                    <span id="win-rate">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span>Wins:</span>
+                    <span id="wins">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Losses:</span>
+                    <span id="losses">0</span>
+                </div>
+            </div>
+
+            <button id="instructions-btn" class="instructions-button">
+                Game Instructions
             </button>
-        </div>
 
-        <!-- Update the lobby structure -->
-        <div class="lobby-container">
-            <div class="connected-players">
-                <h2>Connected Players</h2>
-                <div id="online-users-area"></div>
-            </div>
+            <div id="instructions-popup" class="popup-overlay">
+                <div class="popup-content">
+                    <span class="close-popup">&times;</span>
+                    <h3>Game Instructions</h3>
 
-            <div class="right-column">
-                <div class="game-stats">
-                    <h2>Your Stats</h2>
-                    <div class="stat-row">
-                        <span>Total Games:</span>
-                        <span id="total-games">0</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>Win Rate:</span>
-                        <span id="win-rate">0%</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>Wins:</span>
-                        <span id="wins">0</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>Losses:</span>
-                        <span id="losses">0</span>
-                    </div>
-                </div>
+                    <p>Basic Controls</p>
+                    <ul class="controls-list">
+                        <li>
+                            <img src="assets/icon/WASD.png" alt="WASD Keys" class="control-icon" />
+                            <span class="control">WASD Keys</span>
+                            <br />Movement
+                        </li>
+                        <li>
+                            <img src="assets/icon/MOUSEBUTTONLEFT.png" alt="Mouse" class="control-icon" />
+                            <span class="control">Mouse</span>
+                            <br />Aim & Attack
+                        </li>
+                        <li>
+                            <img src="assets/icon/SPACE.png" alt="Spacebar" class="control-icon" />
+                            <span class="control">Spacebar</span>
+                            <br />Jump
+                        </li>
+                    </ul>
 
-                <button id="instructions-btn" class="instructions-button">
-                    Game Instructions
-                </button>
+                    <p>Weapons</p>
+                    <ul class="weapons-list">
+                        <li>
+                            <img src="assets/weapons/daggers.png" alt="Dagger" class="weapon-icon" />
+                            <span class="weapon">Daggers</span>
+                            <br />Fast & Throwable <br />Low Damage
+                        </li>
+                        <li>
+                            <img src="assets/weapons/sword.png" alt="Sword" class="weapon-icon" />
+                            <span class="weapon">Sword</span>
+                            <br />Balanced Melee <br />Medium Damage
+                        </li>
+                        <li>
+                            <img src="assets/weapons/bow.png" alt="Bow" class="weapon-icon" />
+                            <span class="weapon">Bow</span>
+                            <br />Long Range <br />High Damage
+                        </li>
+                    </ul>
 
-                <div id="instructions-popup" class="popup-overlay">
-                    <div class="popup-content">
-                        <span class="close-popup">&times;</span>
-                        <h3>Game Instructions</h3>
+                    <p>Power-Ups</p>
+                    <ul class="powerups-list">
+                        <li>
+                            <img src="assets/powerups/health.png" alt="Health Potion" class="powerup-icon" />
+                            <span class="powerup">Health Potion</span>
+                            <br />+20 HP
+                        </li>
+                        <li>
+                            <img src="assets/powerups/attack.png" alt="Attack Boost" class="powerup-icon" />
+                            <span class="powerup">Attack Boost</span>
+                            <br />2x Damage <br />10s Duration
+                        </li>
+                        <li>
+                            <img src="assets/powerups/speed.png" alt="Speed Boost" class="powerup-icon" />
+                            <span class="powerup">Speed Boost</span>
+                            <br />1.5x Speed <br />8s Duration
+                        </li>
+                    </ul>
 
-                        <p>Basic Controls</p>
-                        <ul class="controls-list">
-                            <li>
-                                <img
-                                    src="assets/icon/WASD.png"
-                                    alt="WASD Keys"
-                                    class="control-icon"
-                                />
-                                <span class="control">WASD Keys</span>
-                                <br />Movement
-                            </li>
-                            <li>
-                                <img
-                                    src="assets/icon/MOUSEBUTTONLEFT.png"
-                                    alt="Mouse"
-                                    class="control-icon"
-                                />
-                                <span class="control">Mouse</span>
-                                <br />Aim & Attack
-                            </li>
-                            <li>
-                                <img
-                                    src="assets/icon/SPACE.png"
-                                    alt="Spacebar"
-                                    class="control-icon"
-                                />
-                                <span class="control">Spacebar</span>
-                                <br />Jump
-                            </li>
-                        </ul>
-
-                        <p>Weapons</p>
-                        <ul class="weapons-list">
-                            <li>
-                                <img
-                                    src="assets/weapons/daggers.png"
-                                    alt="Dagger"
-                                    class="weapon-icon"
-                                />
-                                <span class="weapon">Daggers</span>
-                                <br />Fast & Throwable <br />Low Damage
-                            </li>
-                            <li>
-                                <img
-                                    src="assets/weapons/sword.png"
-                                    alt="Sword"
-                                    class="weapon-icon"
-                                />
-                                <span class="weapon">Sword</span>
-                                <br />Balanced Melee <br />Medium Damage
-                            </li>
-                            <li>
-                                <img
-                                    src="assets/weapons/bow.png"
-                                    alt="Bow"
-                                    class="weapon-icon"
-                                />
-                                <span class="weapon">Bow</span>
-                                <br />Long Range <br />High Damage
-                            </li>
-                        </ul>
-
-                        <p>Power-Ups</p>
-                        <ul class="powerups-list">
-                            <li>
-                                <img
-                                    src="assets/powerups/health.png"
-                                    alt="Health Potion"
-                                    class="powerup-icon"
-                                />
-                                <span class="powerup">Health Potion</span>
-                                <br />+20 HP
-                            </li>
-                            <li>
-                                <img
-                                    src="assets/powerups/attack.png"
-                                    alt="Attack Boost"
-                                    class="powerup-icon"
-                                />
-                                <span class="powerup">Attack Boost</span>
-                                <br />2x Damage <br />10s Duration
-                            </li>
-                            <li>
-                                <img
-                                    src="assets/powerups/speed.png"
-                                    alt="Speed Boost"
-                                    class="powerup-icon"
-                                />
-                                <span class="powerup">Speed Boost</span>
-                                <br />1.5x Speed <br />8s Duration
-                            </li>
-                        </ul>
-
-                        <p>Victory Conditions</p>
-                        <ul class="victory-list">
-                            <li>
-                                <img
-                                    src="assets/icon/Win.png"
-                                    alt="Last Standing"
-                                    class="victory-icon"
-                                />
-                                <span class="condition">Last Standing</span>
-                                <br />Eliminate All Opponents
-                            </li>
-                            <li>
-                                <img
-                                    src="assets/icon/Time.png"
-                                    alt="Time Victory"
-                                    class="victory-icon"
-                                />
-                                <span class="condition">Time Victory</span>
-                                <br />Highest HP After 3 Minutes
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="lobby-buttons">
-                    <button
-                        id="start-game-btn"
-                        class="lobby-button start-button disabled"
-                        disabled
-                        title="Need at least 2 players to start"
-                    >
-                        Start Game
-                    </button>
-                    <button class="lobby-button menu-button">
-                        Back to Menu
-                    </button>
-                    <div class="game-title">Arena Warriors</div>
+                    <p>Victory Conditions</p>
+                    <ul class="victory-list">
+                        <li>
+                            <img src="assets/icon/Win.png" alt="Last Standing" class="victory-icon" />
+                            <span class="condition">Last Standing</span>
+                            <br />Eliminate All Opponents
+                        </li>
+                        <li>
+                            <img src="assets/icon/Time.png" alt="Time Victory" class="victory-icon" />
+                            <span class="condition">Time Victory</span>
+                            <br />Highest HP After 3 Minutes
+                        </li>
+                    </ul>
                 </div>
             </div>
-        </div>
 
-        <div id="signin-overlay" class="overlay row">
-            <div class="auth-container">
-                <h1 class="auth-title">Arena Warriors</h1>
-
-                <div id="register-section">
-                    <h2>Register</h2>
-                    <form id="register-form" class="auth-form">
-                        <input
-                            id="register-username"
-                            maxlength="10"
-                            placeholder="Choose a Username"
-                        />
-                        <input
-                            id="register-password"
-                            type="password"
-                            placeholder="Create a Password (min 8 chars, include numbers)"
-                        />
-                        <button type="submit" class="auth-button">
-                            Register
-                        </button>
-                        <div id="register-message" class="warning center"></div>
-                    </form>
-                </div>
-
-                <div id="login-section">
-                    <h2>Login</h2>
-                    <form id="signin-form" class="auth-form">
-                        <input
-                            id="signin-username"
-                            placeholder="Enter Your Username"
-                        />
-                        <input
-                            id="signin-password"
-                            type="password"
-                            placeholder="Enter Your Password"
-                        />
-                        <button type="submit" class="auth-button">Login</button>
-                        <div id="signin-message" class="warning center"></div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div id="game-over-page" style="display: none">
-            <div class="game-over-container">
-                <h1 class="game-over-title">Game Over</h1>
-
-                <div id="result-animation">
-                    <h2 id="victory-text" style="display: none; color: #27ae60">
-                        VICTORY!
-                    </h2>
-                    <h2 id="defeat-text" style="display: none; color: #c0392b">
-                        DEFEAT!
-                    </h2>
-                </div>
-
-                <div class="game-stats-container">
-                    <h2>Your Statistics</h2>
-                    <div class="stat-row">
-                        <span>Damage Dealt:</span>
-                        <span id="damage-dealt">0</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>Power-ups Collected:</span>
-                        <span id="powerups-collected">0</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>Survival Time:</span>
-                        <span id="survival-time">0s</span>
-                    </div>
-                </div>
-
-                <div class="rankings-container">
-                    <h2>Player Rankings</h2>
-                    <div class="rankings-table">
-                        <div class="rankings-header">
-                            <span class="rank">#</span>
-                            <span class="player">Player</span>
-                            <span class="damage">Damage</span>
-                            <span class="powerups">Power-ups</span>
-                            <span class="time">Time</span>
-                        </div>
-                        <div id="rankings-list">
-                            <!-- Rankings will be populated here -->
-                        </div>
-                    </div>
-                </div>
-
-                <button id="play-again-btn" class="game-over-btn">
-                    Play Again
+            <div class="lobby-buttons">
+                <button id="start-game-btn" class="lobby-button start-button disabled" disabled
+                    title="Need at least 2 players to start">
+                    Start Game
                 </button>
-                <button id="return-lobby-btn-2" class="game-over-btn">
-                    Return to Lobby
+                <button class="lobby-button menu-button">
+                    Back to Menu
                 </button>
-
                 <div class="game-title">Arena Warriors</div>
             </div>
         </div>
+    </div>
 
-        <!-- Third-party libraries first -->
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
-        <script src="/socket.io/socket.io.min.js"></script>
+    <div id="signin-overlay" class="overlay row">
+        <div class="auth-container">
+            <h1 class="auth-title">Arena Warriors</h1>
 
-        <!-- Add immediate verification that Phaser loaded -->
-        <script></script>
+            <div id="register-section">
+                <h2>Register</h2>
+                <form id="register-form" class="auth-form">
+                    <input id="register-username" maxlength="10" placeholder="Choose a Username" />
+                    <input id="register-password" type="password"
+                        placeholder="Create a Password (min 8 chars, include numbers)" />
+                    <button type="submit" class="auth-button">
+                        Register
+                    </button>
+                    <div id="register-message" class="warning center"></div>
+                </form>
+            </div>
 
-        <!-- Your game scripts -->
-        <script src="/scripts/game.js"></script>
-        <script></script>
-
-        <!-- Rest of your scripts -->
-        <script src="/scripts/socket.js"></script>
-        <script src="/scripts/ui.js"></script>
-        <script src="/scripts/registration.js"></script>
-        <script src="/scripts/authentication.js"></script>
-        <script src="/scripts/gameStats.js"></script>
-        <script src="/scripts/app.js"></script>
-
-        <!-- Initialize everything -->
-        <script>
-            $(function () {
-                // Initialize the UI
-                UI.initialize()
-                VenueSelector.initialize()
-
-                // Validate the signin
-                Authentication.validate(
-                    () => {
-                        SignInForm.hide()
-                        UserPanel.update(Authentication.getUser())
-                        UserPanel.show()
-                        Socket.connect()
-                    },
-                    () => {
-                        SignInForm.show()
-                    }
-                )
-            })
-        </script>
-
-        <!-- Update your game container -->
-        <div id="gameContainer" style="display: none">
-            <!-- Add specific dimensions and styling -->
-            <div id="game"></div>
+            <div id="login-section">
+                <h2>Login</h2>
+                <form id="signin-form" class="auth-form">
+                    <input id="signin-username" placeholder="Enter Your Username" />
+                    <input id="signin-password" type="password" placeholder="Enter Your Password" />
+                    <button type="submit" class="auth-button">Login</button>
+                    <div id="signin-message" class="warning center"></div>
+                </form>
+            </div>
         </div>
+    </div>
 
-        <script>
-            $(function () {
-                // Check if scripts are loaded
-            })
-        </script>
-    </body>
+    <div id="game-over-page" style="display: none">
+        <div class="game-over-container">
+            <h1 class="game-over-title">Game Over</h1>
+
+            <div id="result-animation">
+                <h2 id="victory-text" style="display: none; color: #27ae60">
+                    VICTORY!
+                </h2>
+                <h2 id="defeat-text" style="display: none; color: #c0392b">
+                    DEFEAT!
+                </h2>
+            </div>
+
+            <div class="game-stats-container">
+                <h2>Your Statistics</h2>
+                <div class="stat-row">
+                    <span>Damage Dealt:</span>
+                    <span id="damage-dealt">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Power-ups Collected:</span>
+                    <span id="powerups-collected">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Survival Time:</span>
+                    <span id="survival-time">0s</span>
+                </div>
+            </div>
+
+            <div class="rankings-container">
+                <h2>Player Rankings</h2>
+                <div class="rankings-table">
+                    <div class="rankings-header">
+                        <span class="rank">#</span>
+                        <span class="player">Player</span>
+                        <span class="damage">Damage</span>
+                        <span class="powerups">Power-ups</span>
+                        <span class="time">Time</span>
+                    </div>
+                    <div id="rankings-list">
+                        <!-- Rankings will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <button id="play-again-btn" class="game-over-btn">
+                Play Again
+            </button>
+            <button id="return-lobby-btn-2" class="game-over-btn">
+                Return to Lobby
+            </button>
+
+            <div class="game-title">Arena Warriors</div>
+        </div>
+    </div>
+
+    <!-- Third-party libraries first -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="/socket.io/socket.io.min.js"></script>
+
+    <!-- Add immediate verification that Phaser loaded -->
+    <script></script>
+
+    <!-- Your game scripts -->
+    <script src="/scripts/game.js"></script>
+    <script></script>
+
+    <!-- Rest of your scripts -->
+    <script src="/scripts/socket.js"></script>
+    <script src="/scripts/ui.js"></script>
+    <script src="/scripts/registration.js"></script>
+    <script src="/scripts/authentication.js"></script>
+    <script src="/scripts/gameStats.js"></script>
+    <script src="/scripts/app.js"></script>
+
+    <!-- Initialize everything -->
+    <script>
+        $(function () {
+            // Initialize the UI
+            UI.initialize()
+            VenueSelector.initialize()
+
+            // Validate the signin
+            Authentication.validate(
+                () => {
+                    SignInForm.hide()
+                    UserPanel.update(Authentication.getUser())
+                    UserPanel.show()
+                    Socket.connect()
+                },
+                () => {
+                    SignInForm.show()
+                }
+            )
+        })
+    </script>
+
+    <!-- Update your game container -->
+    <div id="gameContainer" style="display: none">
+        <button class="end-game-button">End Match</button>
+        <div id="game"></div>
+    </div>
+
+    <script>
+        $(function () {
+            // Check if scripts are loaded
+        })
+    </script>
+</body>
+
 </html>

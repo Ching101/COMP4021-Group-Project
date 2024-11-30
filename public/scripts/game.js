@@ -131,47 +131,47 @@ const PlayerManager = {
                 console.log('Cannot attack: already attacking or in cooldown');
                 return false;
             }
-            
+
             // Stop any movement if this is the local player
             if (playerSprite === player) {
                 playerSprite.setVelocityX(0);
-            }       
-        
+            }
+
             // Store the previous animation state to restore later if needed
             const previousAnim = playerSprite.currentAnim;
-            
+
             // Clear any existing animation timer
             if (playerSprite.animationTimer) {
                 playerSprite.animationTimer.destroy();
                 playerSprite.animationTimer = null;
             }
-        
+
             // Set attacking state IMMEDIATELY
             playerSprite.isAttacking = true;
             playerSprite.attackCooldown = true; // Set cooldown immediately
             playerSprite.currentAnim = null; // Prevent other animations from running
-            
-            
+
+
             // Normalize weapon type to lowercase for consistency
             weaponType = weaponType.toLowerCase();
-            
+
             // Get weapon config
             const weaponConfig = WEAPONS[weaponType.toUpperCase()];
             if (!weaponConfig) {
                 console.error('Invalid weapon type:', weaponType);
                 return false;
             }
-        
+
             // Set up animation parameters based on weapon type
             const maxFrames = weaponType === 'dagger' ? 13 : 9; // 14 frames for dagger, 9 for sword
             const frameDelay = weaponType === 'dagger' ? 50 : 90; // Faster animation (50ms for dagger, 60ms for sword)
-            
+
             // Function to get texture key
             const getTextureKey = (frame) => {
                 const capitalizedWeapon = weaponType.charAt(0).toUpperCase() + weaponType.slice(1);
                 return `Player${playerSprite.number}_${playerSprite.direction}_Attack_${capitalizedWeapon}_${frame}`;
             };
-        
+
             // Create all frames at once
             const frames = [];
             for (let i = 1; i <= maxFrames; i++) {
@@ -182,23 +182,23 @@ const PlayerManager = {
                 }
                 frames.push(textureKey);
             }
-        
+
             // Set initial frame
             playerSprite.setTexture(frames[0]);
-            
+
             // Flag to track if animation is active
             let isAnimationActive = true;
-        
+
             // Create a single timeline for the entire animation
             let currentIndex = 0;
             const animationLoop = () => {
                 if (!isAnimationActive) return;
-        
+
                 if (currentIndex < frames.length) {
                     const currentTexture = frames[currentIndex];
                     playerSprite.setTexture(currentTexture);
                     currentIndex++;
-                    
+
                     // Emit animation frame update for network play
                     if (playerSprite === player) {
                         const socket = Socket.getSocket();
@@ -212,33 +212,17 @@ const PlayerManager = {
                             });
                         }
                     }
-                    
+
                     scene.time.delayedCall(frameDelay, animationLoop);
                 } else {
                     // Animation complete
                     isAnimationActive = false;
                     playerSprite.isAttacking = false;
-                    
-                    // Check if player is still trying to move
-                    const cursors = scene.input.keyboard.createCursorKeys();
-                    if (playerSprite === player) { // Only for local player
-                        if (cursors.left.isDown || cursors.right.isDown) {
-                            // Determine direction and play run animation
-                            const direction = cursors.left.isDown ? 'left' : 'right';
-                            playerSprite.direction = direction;
-                            const runAnimation = `Player${playerSprite.number}_${direction}_Run_${playerSprite.currentProp}`;
-                            playerSprite.playAnimation(runAnimation);
-                        } else {
-                            // If not moving, return to idle state
-                            const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`;
-                            playerSprite.setTexture(idleTexture);
-                        }
-                    } else {
-                        // For other players, return to idle state (movement will be handled by network updates)
-                        const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`;
-                        playerSprite.setTexture(idleTexture);
-                    }
-                    
+
+                    // Return to idle state
+                    const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`;
+                    playerSprite.setTexture(idleTexture);
+
                     // Handle cooldown
                     scene.time.delayedCall(weaponConfig.attackSpeed, () => {
                         playerSprite.attackCooldown = false; // Remove cooldown after delay
@@ -250,10 +234,10 @@ const PlayerManager = {
                     });
                 }
             };
-        
+
             // Override the sprite's texture setter during the animation
             const originalSetTexture = playerSprite.setTexture;
-            playerSprite.setTexture = function(key) {
+            playerSprite.setTexture = function (key) {
                 if (isAnimationActive) {
                     // Only allow attack animation textures during the animation
                     if (frames.includes(key)) {
@@ -263,16 +247,16 @@ const PlayerManager = {
                     return originalSetTexture.call(this, key);
                 }
             };
-        
+
             // Start the animation loop
             animationLoop();
-        
+
             // Clean up after animation
             scene.time.delayedCall(frameDelay * (maxFrames + 1), () => {
                 // Restore original setTexture function
                 playerSprite.setTexture = originalSetTexture;
             });
-        
+
             return true;
         };
 
@@ -530,7 +514,7 @@ function preload() {
                 const key = `Player${i}_${direction}_Attack_Dagger_${frame}`;
                 this.load.image(key, path);
             }
-            
+
             // Load sword attack frames (9 frames)
             for (let frame = 1; frame <= 9; frame++) {
                 const path = `./assets/characters/Player${i}/${direction}/Attack/Sword/${frame}.png`;
@@ -661,6 +645,19 @@ function create() {
     gameState.gameStarted = true;
 
     console.log('Game created with room ID:', gameState.roomId);
+
+    // Add this to the create function after other key bindings
+    this.input.keyboard.on('keydown-X', function () {
+        // Only allow if game is active
+        if (gameState.gameStarted) {
+            const socket = Socket.getSocket();
+            if (socket) {
+                socket.emit('reduce_time', {
+                    roomId: gameState.roomId
+                });
+            }
+        }
+    });
 }
 
 function createGameWorld() {
@@ -736,10 +733,34 @@ function setupPlayerControls(playerSprite) {
         delay: 16,
         callback: () => {
             if (!playerSprite.active) return;
-    
+
             let currentAnimation = null;
             let isMoving = false;
-    
+
+            // Don't allow any movement or animation changes during attack
+            if (playerSprite.isAttacking || playerSprite.attackCooldown) {
+                playerSprite.setVelocityX(0);
+
+                // Important: Emit stopped movement to other players
+                const socket = Socket.getSocket();
+                if (socket) {
+                    socket.emit("player_movement", {
+                        roomId: gameState.roomId,
+                        id: socket.id,
+                        x: playerSprite.x,
+                        y: playerSprite.y,
+                        velocityX: 0,
+                        velocityY: playerSprite.body.velocity.y, // Keep vertical velocity for jumping
+                        direction: playerSprite.direction,
+                        animation: null,
+                        currentProp: playerSprite.currentProp,
+                        isMoving: false,
+                        isAttacking: true // Add this flag
+                    });
+                }
+                return;
+            }
+
             // Handle horizontal movement
             if (cursors.left.isDown && !cursors.right.isDown) {
                 // Only set velocity if not attacking
@@ -760,25 +781,16 @@ function setupPlayerControls(playerSprite) {
             } else {
                 playerSprite.setVelocityX(0);
             }
-    
+
             // Handle jumping - also prevent during attack
             if (cursors.up.isDown && playerSprite.body.touching.down && !playerSprite.isAttacking) {
                 playerSprite.setVelocityY(-500);
                 currentAnimation = `Player${playerSprite.number}_${playerSprite.direction}_Jump_${playerSprite.currentProp}`;
                 isMoving = true;
             }
-    
-            // Handle animations
-            if (playerSprite.isAttacking) {
-                // Don't change animation during attack
-                return;
-            } else if (isMoving) {
-                // Play movement animation
-                if (currentAnimation && (playerSprite.currentAnim !== currentAnimation || !playerSprite.animationTimer)) {
-                    playerSprite.playAnimation(currentAnimation);
-                }
-            } else {
-                // Set idle state when not moving
+
+            // Set idle state when not moving
+            if (!isMoving) {
                 if (playerSprite.animationTimer) {
                     playerSprite.animationTimer.destroy();
                     playerSprite.animationTimer = null;
@@ -787,7 +799,7 @@ function setupPlayerControls(playerSprite) {
                 const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`;
                 playerSprite.setTexture(idleTexture);
             }
-    
+
             // Only emit movement if not attacking
             const socket = Socket.getSocket();
             if (socket && !playerSprite.isAttacking) {
@@ -862,7 +874,7 @@ function createHealthBar() {
     const barWidth = 200;
     const barHeight = 20;
     const padding = 2; // Border padding
-    
+
     // Create text label
     const healthText = this.add
         .text(10, 5, 'Your Health', {
@@ -907,10 +919,10 @@ function updateHealthBar() {
     healthBar.fillStyle(0xff0000, 1);
     const currentWidth = (healthBar.barWidth * (Math.max(0, Math.min(100, player.health)) / 100));
     healthBar.fillRoundedRect(
-        10 + healthBar.padding, 
-        25 + healthBar.padding, 
-        currentWidth, 
-        healthBar.barHeight, 
+        10 + healthBar.padding,
+        25 + healthBar.padding,
+        currentWidth,
+        healthBar.barHeight,
         4
     );
 }
@@ -948,7 +960,7 @@ function basicAttack(pointer) {
             // Start attack animation
             if (player.playMeleeAttackAnimation(this, player, currentWeapon.name)) {
                 meleeAttack.call(this, currentWeapon.damage, currentWeapon.range);
-                
+
                 // Emit attack event for multiplayer with all necessary data
                 const socket = Socket.getSocket();
                 if (socket) {
@@ -973,75 +985,12 @@ function handleOtherPlayerAttack(attackData) {
     if (otherPlayer) {
         // Update player direction
         otherPlayer.direction = attackData.direction;
-        
+
         // Play attack animation for other player
         otherPlayer.playMeleeAttackAnimation(this, otherPlayer, attackData.weaponType);
     }
 }
 
-// function startItemSpawning() {
-//     // Spawn weapons every 5 seconds
-//     this.time.addEvent({
-//         delay: 5000,
-//         callback: () => {
-//             const weaponTypes = Object.keys(WEAPONS);
-//             const randomType = weaponTypes[Math.floor(Math.random() * weaponTypes.length)];
-//             const weaponConfig = WEAPONS[randomType];
-
-//             const x = Phaser.Math.Between(50, 750);
-//             const y = Phaser.Math.Between(50, 500);
-
-//             // Generate unique ID for the weapon
-//             const id = Date.now();
-
-//             // Emit weapon spawn event to server
-//             const socket = Socket.getSocket();
-//             if (socket) {
-//                 socket.emit('spawn_weapon', {
-//                     roomId: window.currentRoomId,
-//                     type: randomType,
-//                     weaponConfig: weaponConfig,
-//                     x: x,
-//                     y: y,
-//                     id: id
-//                 });
-//             }
-//         },
-//         loop: true,
-//     });
-
-//     // Spawn powerups every 10 seconds
-//     this.time.addEvent({
-//         delay: 10000,
-//         callback: () => {
-//             const powerupTypes = Object.keys(POWERUPS);
-//             const randomType = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
-//             const powerupConfig = POWERUPS[randomType];
-
-//             const x = Phaser.Math.Between(50, 750);
-//             const y = Phaser.Math.Between(50, 500);
-
-//             // Generate unique ID for the powerup
-//             const id = Date.now();
-
-//             // Emit powerup spawn event to server
-//             const socket = Socket.getSocket();
-//             if (socket) {
-//                 socket.emit('spawn_powerup', {
-//                     roomId: window.currentRoomId,
-//                     type: randomType,
-//                     powerupConfig: powerupConfig,
-//                     x: x,
-//                     y: y,
-//                     id: id
-//                 });
-//             }
-//         },
-//         loop: true,
-//     });
-// }
-
-// Move spawnWeapon outside of config
 
 function spawnWeapon(x, y, weaponConfig, id) {
     //console.log('Spawning weapon:', { x, y, weaponConfig, id });
@@ -1380,60 +1329,61 @@ function applyPowerupEffect(playerSprite, powerupConfig) {
 
 
 
-function endMatch() {
-    // Clear timer interval if it exists
-    if (gameState.timer.interval) {
-        clearInterval(gameState.timer.interval);
-    }
+// function endMatch() {
+//     // Clear timer interval if it exists
+//     if (gameState.timer.interval) {
+//         clearInterval(gameState.timer.interval);
+//     }
 
-    // Remove timer element
-    if (gameState.timer.element) {
-        gameState.timer.element.remove();
-    }
+//     // Remove timer element
+//     if (gameState.timer.element) {
+//         gameState.timer.element.remove();
+//     }
+//     const endGameButton = document.querySelector('.end-game-button');
+//     endGameButton.style.display = 'none';
+//     // Hide game container
+//     $('#gameContainer').hide();
 
-    // Hide game container
-    $('#gameContainer').hide();
+//     // Show game over page with animation
+//     $('#game-over-page').fadeIn(500);
 
-    // Show game over page with animation
-    $('#game-over-page').fadeIn(500);
+//     // Determine winner and show appropriate message
+//     const currentPlayer = PlayerManager.players.get(Socket.getSocket().id);
+//     const isWinner = currentPlayer && currentPlayer.health > 0;
 
-    // Determine winner and show appropriate message
-    const currentPlayer = PlayerManager.players.get(Socket.getSocket().id);
-    const isWinner = currentPlayer && currentPlayer.health > 0;
+//     // Show victory or defeat message with animation
+//     if (isWinner) {
+//         $('#victory-text').fadeIn(1000);
+//         $('#defeat-text').hide();
+//         // Update game record for win
+//         GameRecord.update(true);
+//     } else {
+//         $('#defeat-text').fadeIn(1000);
+//         $('#victory-text').hide();
+//         // Update game record for loss
+//         GameRecord.update(false);
+//     }
 
-    // Show victory or defeat message with animation
-    if (isWinner) {
-        $('#victory-text').fadeIn(1000);
-        $('#defeat-text').hide();
-        // Update game record for win
-        GameRecord.update(true);
-    } else {
-        $('#defeat-text').fadeIn(1000);
-        $('#victory-text').hide();
-        // Update game record for loss
-        GameRecord.update(false);
-    }
+//     // Update final stats
+//     const gameStats = {
+//         damageDealt: gameState.damageDealt || 0,
+//         powerupsCollected: gameState.powerupsCollected || 0,
+//         survivalTime: Math.floor((Date.now() - gameState.startTime) / 1000)
+//     };
 
-    // Update final stats
-    const gameStats = {
-        damageDealt: gameState.damageDealt || 0,
-        powerupsCollected: gameState.powerupsCollected || 0,
-        survivalTime: Math.floor((Date.now() - gameState.startTime) / 1000)
-    };
+//     $('#damage-dealt').text(gameStats.damageDealt);
+//     $('#powerups-collected').text(gameStats.powerupsCollected);
+//     $('#survival-time').text(gameStats.survivalTime + 's');
 
-    $('#damage-dealt').text(gameStats.damageDealt);
-    $('#powerups-collected').text(gameStats.powerupsCollected);
-    $('#survival-time').text(gameStats.survivalTime + 's');
+//     // Clean up game state
+//     gameState.gameStarted = false;
+//     gameState.players.clear();
+//     gameState.weapons.clear();
+//     gameState.powerups.clear();
 
-    // Clean up game state
-    gameState.gameStarted = false;
-    gameState.players.clear();
-    gameState.weapons.clear();
-    gameState.powerups.clear();
-
-    // Resume stats auto-refresh
-    GameStats.startAutoRefresh();
-}
+//     // Resume stats auto-refresh
+//     GameStats.startAutoRefresh();
+// }
 
 function meleeAttack(damage, range) {
     const direction = player.direction === "left" ? -1 : 1;
@@ -1910,69 +1860,41 @@ const updateCheatUI = function () {
         cheatIndicator.style.display = isCheatMode ? "block" : "none"
     }
 }
-function updateTimer() {
-    // Only proceed if we have a valid timer element and remaining time
-    if (!gameState.timer.element || typeof gameState.timer.remaining !== 'number') {
-        return;
-    }
+// function updateTimer() {
+//     const minutes = Math.floor(gameState.timer.remaining / 60);
+//     const seconds = gameState.timer.remaining % 60;
+//     gameState.timer.element.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-    const minutes = Math.floor(gameState.timer.remaining / 60);
-    const seconds = gameState.timer.remaining % 60;
-    gameState.timer.element.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+//     // Add warning class when less than 30 seconds remain
+//     if (gameState.timer.remaining <= 30) {
+//         gameState.timer.element.classList.add('warning');
+//     }
 
-    // Add warning class when less than 30 seconds remain
-    if (gameState.timer.remaining <= 30) {
-        gameState.timer.element.classList.add('warning');
-    }
+//     if (gameState.timer.remaining <= 0) {
+//         // End game when timer reaches 0
+//         clearInterval(gameState.timer.interval);
+//         endMatch();
+//         gameState.timer.element.remove();
+//     }
 
-    // Decrement the remaining time
-    gameState.timer.remaining--;
-
-    // Check if timer has reached zero
-    if (gameState.timer.remaining < 0) {
-        // Clear interval and remove timer element
-        if (gameState.timer.interval) {
-            clearInterval(gameState.timer.interval);
-            gameState.timer.interval = null;
-        }
-        if (gameState.timer.element) {
-            gameState.timer.element.remove();
-        }
-        // End the match
-        endMatch();
-    }
-}
+//     gameState.timer.remaining--;
+// }
 
 // Add this function to handle game initialization
 function startGame(gameData, socketId) {
     // Store room ID in game state
+    console.time('startGameTime');
+    console.log('[StartGame] Beginning game initialization');
     gameState.roomId = gameData.roomId
+    console.log('[StartGame] Creating timer element');
 
-    const gameContainer = document.getElementById('gameContainer');
-    gameState.timer.element = document.createElement('div');
-    gameState.timer.element.className = 'game-timer';
-    gameContainer.appendChild(gameState.timer.element);
 
-    // Initialize timer
-    gameState.timer = {
-        element: document.createElement('div'),
-        remaining: 180, // 3 minutes
-        interval: null
-    };
-    
-    gameState.timer.element.className = 'game-timer';
-    document.getElementById('gameContainer').appendChild(gameState.timer.element);
 
     // Initial display
-    updateTimer();
-
-    // Start the countdown
-    gameState.timer.interval = setInterval(updateTimer, 1000);
-
-
+    console.log('[StartGame] Setting up game scene');
     // Initialize Phaser game if not already created
     if (!window.game.scene) {
-        console.log('Creating new Phaser game instance');
+        console.log('[StartGame] Creating new Phaser instance');
         // Add scene ready callback
         config.scene.create = function () {
             console.log('Scene create function called');
@@ -1980,63 +1902,46 @@ function startGame(gameData, socketId) {
             create.call(this)
 
             // Now that scene is ready, spawn players
-            console.log("Scene ready, spawning players")
+            console.log('[Scene] Spawning players');
             spawnAllPlayers.call(this, gameData.players, socketId)
+
+
+            console.log('[Scene] Notifying server player is ready');
+            Socket.getSocket().emit('player_ready', {
+                roomId: gameState.roomId,
+                playerId: Socket.getSocket().id
+            });
+
         }
         window.game = new Phaser.Game(config)
-    } else {
-        //console.log(window.game)
-        console.log('Phaser game instance already exists');
-        // If game exists, check if the scene is active
-        const currentScene = window.game.scene.scenes[0];
-        if (currentScene) {
-            console.log('Current scene found:', currentScene);
-            if (currentScene.isActive) {
-                console.log('Restarting active scene');
-                // Restart the scene
-                currentScene.scene.restart();
-                // Wait for scene to be ready
-                currentScene.events.once('create', function () {
-                    console.log('Scene restarted, spawning players');
-                    spawnAllPlayers.call(this, gameData.players);
-                });
-            } else {
-                console.error('Game scene is not active');
-                return; // Exit if the scene is not ready
-            }
-        } else {
-            console.error('No current scene found');
-            return; // Exit if no scene is found
-        }
     }
 
+
     // Reset game state
+    console.log('[StartGame] Clearing game state');
     gameState.gameStarted = true;
     gameState.players.clear();
     gameState.weapons.clear();
     gameState.powerups.clear();
-    console.log('Game state reset');
-
-
-    // Check if the scene is active before spawning players
-    const activeScene = window.game?.scene?.scenes[0];
-    console.log('Is active scene:', activeScene?.isActive);
-    if (activeScene?.isActive) {
-        console.log('Game data before spawning players:', gameData);
-        spawnAllPlayers.call(activeScene, gameData.players, socketId);
-    }
-    // Create and setup timer
-
+    // Corrected the code to properly select and remove the loading spinner element
+    document.querySelector('.loading-spinner').remove();
 
     console.log("Game started in room:", gameData.roomId)
 }
 
+
 function spawnAllPlayers(playerAssignments, socketId) {
     // Clear existing players
     PlayerManager.players.clear()
+    console.time('spawnPlayersTime');
+    console.log('[Spawn] Starting player spawn:', {
+        playerCount: playerAssignments.length,
+        socketId: socketId
+    });
 
     // Create all players at their assigned spawn points
     playerAssignments.forEach((playerData) => {
+
         // Get spawn point based on player number
         console.log("playerData", playerData)
         const spawnPoint = SPAWN_POINTS[playerData.spawnPoint]
@@ -2085,6 +1990,7 @@ function spawnAllPlayers(playerAssignments, socketId) {
         //     loop: true,
         // })
     })
+    console.timeEnd('spawnPlayersTime');
 }
 function handlePlayerAction(actionType, data) {
     // Emit the action to other players
@@ -2315,6 +2221,7 @@ function handleWeaponPickup(weapon) {
         });
     }
 }
+
 
 // Initialize when document is ready
 document.addEventListener("DOMContentLoaded", () => {

@@ -3,6 +3,10 @@ const express = require("express")
 const bcrypt = require("bcrypt")
 const fs = require("fs")
 const session = require("express-session")
+const GAME_CONFIG = {
+    DURATION: 180, // 3 minutes in seconds
+    MIN_PLAYERS: 2
+};
 
 // Create the Express app
 const app = express()
@@ -12,6 +16,7 @@ app.use(express.static("public"))
 
 // Use the json middleware to parse JSON data
 app.use(express.json())
+
 
 // Create the Socket.IO server
 const { Server } = require("socket.io")
@@ -48,11 +53,11 @@ const activeGames = new Map();
 
 const SPAWN_CONFIG = {
     WEAPONS: {
-        interval: 5000,
+        interval: 10000,  // 5 seconds
         types: ["DAGGER", "SWORD", "BOW"]
     },
     POWERUPS: {
-        interval: 10000,
+        interval: 20000,
         types: ["HEALTH", "ATTACK", "SPEED"],
         configs: {
             ATTACK: {
@@ -73,40 +78,49 @@ const SPAWN_CONFIG = {
     }
 };
 
+function spawnWeapon(roomId, io) {
+    const weaponType = SPAWN_CONFIG.WEAPONS.types[
+        Math.floor(Math.random() * SPAWN_CONFIG.WEAPONS.types.length)
+    ];
+    const weaponData = {
+        roomId,
+        type: weaponType,
+        weaponConfig: {
+            name: weaponType.toLowerCase(),
+            // Damage values: Dagger=15, Sword=25, Bow=35
+            damage: weaponType === "DAGGER" ? 15 : weaponType === "SWORD" ? 25 : 35,
+            // Attack speed (ms): Dagger=200 (fastest), Sword=400, Bow=500 (slowest)
+            attackSpeed: weaponType === "DAGGER" ? 200 : weaponType === "SWORD" ? 400 : 500,
+            // Attack range (pixels): Dagger=30 (shortest), Sword=50, Bow=600 (longest)
+            range: weaponType === "DAGGER" ? 30 : weaponType === "SWORD" ? 50 : 600,
+            // Only daggers can be thrown as projectiles
+            isThrowable: weaponType === "DAGGER"
+        },
+        // Random spawn position within game bounds (50-750 x, 50-500 y)
+        x: Math.floor(Math.random() * (750 - 50) + 50),
+        y: Math.floor(Math.random() * (500 - 50) + 50),
+        id: Date.now()
+    };
+    io.to(roomId).emit('weapon_spawned', weaponData);
+}
+
 function startItemSpawning(roomId, io, game) {
-    // Weapon spawning
+    // Initial spawns
+    spawnWeapon(roomId, io);
+
+    // Set up intervals
     const weaponTimer = setInterval(() => {
+        // Stop spawning if game is no longer active
         if (!game.active) {
             clearInterval(weaponTimer);
             return;
         }
-
-        const weaponType = SPAWN_CONFIG.WEAPONS.types[
-            Math.floor(Math.random() * SPAWN_CONFIG.WEAPONS.types.length)
-        ];
-
-        const weaponData = {
-            roomId,
-            type: weaponType,
-            weaponConfig: {
-                name: weaponType.toLowerCase(),
-                damage: weaponType === "DAGGER" ? 15 : weaponType === "SWORD" ? 25 : 35,
-                attackSpeed: weaponType === "DAGGER" ? 200 : weaponType === "SWORD" ? 400 : 500,
-                range: weaponType === "DAGGER" ? 30 : weaponType === "SWORD" ? 50 : 600,
-                isThrowable: weaponType === "DAGGER"
-            },
-            x: Math.floor(Math.random() * (750 - 50) + 50),
-            y: Math.floor(Math.random() * (500 - 50) + 50),
-            id: Date.now()
-        };
-
-        console.log('Emitting weapon spawn:', weaponData);
-        io.to(roomId).emit('weapon_spawned', weaponData);
+        spawnWeapon(roomId, io);
     }, SPAWN_CONFIG.WEAPONS.interval);
 
-
-    // Powerup spawning
+    // POWERUP SPAWNING SYSTEM
     const powerupTimer = setInterval(() => {
+        // Stop spawning if game is no longer active
         if (!game.active) {
             clearInterval(powerupTimer);
             return;
@@ -122,15 +136,18 @@ function startItemSpawning(roomId, io, game) {
                 name: powerupType.toLowerCase(), // Add this explicitly
                 color: powerupType === "HEALTH" ? 0xff0000 : powerupType === "ATTACK" ? 0xff6b00 : 0x00ff00
             },
+            // Random spawn position within game bounds
             x: Math.floor(Math.random() * (750 - 50) + 50),
             y: 100,
             id: `powerup_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
         };
 
+        // Emit powerup spawn event to all players in the room
         console.log('Emitting powerup spawn:', powerupData);
         io.to(roomId).emit('powerup_spawned', powerupData);
-    }, SPAWN_CONFIG.POWERUPS.interval);
+    }, SPAWN_CONFIG.POWERUPS.interval); // Spawn every 10 seconds (10000ms)
 
+    // Store timer references in game object for cleanup
     game.spawnTimers = {
         weapon: weaponTimer,
         powerup: powerupTimer
@@ -199,7 +216,10 @@ io.on("connection", (socket) => {
             spawnTimers: {
                 weapons: null,
                 powerups: null
-            }
+            },
+            timeRemaining: GAME_CONFIG.DURATION,
+            timer: null,
+            alivePlayers: new Set(),
         };
 
         // Store game in active games
@@ -227,6 +247,9 @@ io.on("connection", (socket) => {
             if (game) {
                 game.started = true;
                 game.active = true;
+                game.timeRemaining = GAME_CONFIG.DURATION; // Initialize time remaining
+
+
 
                 console.log('Available sockets:', {
                     sockets: Object.values(io.sockets.sockets).map(s => ({
@@ -259,7 +282,7 @@ io.on("connection", (socket) => {
                     }
                 });
 
-                startItemSpawning(roomId, io, game);
+                //startItemSpawning(roomId, io, game);
 
                 io.emit('game_started', {
                     roomId: roomId,
@@ -318,31 +341,6 @@ io.on("connection", (socket) => {
         }, 2000);
     });
 
-    // socket.on('player_ready', (playerData) => {
-    //     const game = activeGames.get(playerData.roomId);
-    //     if (game) {
-    //         // Add player to game if not already present
-    //         if (!game.players.has(playerData.player.id)) {
-    //             game.players.add(playerData.player.id);
-
-    //             // Broadcast to all players including sender
-    //             io.to(playerData.roomId).emit('player_ready', playerData);
-
-    //             // Send existing players to new player
-    //             game.players.forEach(existingPlayerId => {
-    //                 if (existingPlayerId !== playerData.player.id) {
-    //                     socket.emit('player_ready', {
-    //                         roomId: playerData.roomId,
-    //                         player: {
-    //                             id: existingPlayerId,
-    //                             // Include other player data
-    //                         }
-    //                     });
-    //                 }
-    //             });
-    //         }
-    //     }
-    // });
 
     socket.on('spawn_weapon', (weaponData) => {
         console.log('Server received weapon spawn:', weaponData);
@@ -473,7 +471,52 @@ io.on("connection", (socket) => {
             });
         }
     });
-    // Add this helper function
+
+    socket.on('player_ready', (data) => {
+        const game = activeGames.get(data.roomId);
+        if (!game) return;
+        // Start the game timer
+        startGameTimer(data.roomId, io);
+        startItemSpawning(data.roomId, io, game);
+
+
+
+
+    });
+
+    socket.on('player_died', (data) => {
+        const game = activeGames.get(data.roomId);
+        if (!game) return;
+
+        // Remove player from alive players
+        game.alivePlayers.delete(data.playerId);
+
+        // Broadcast death to all players
+        io.to(data.roomId).emit('player_died', {
+            playerId: data.playerId
+        });
+
+        // Check if game should end
+        checkGameEnd(data.roomId, io);
+    });
+
+    socket.on('reduce_time', (data) => {
+        const game = activeGames.get(data.roomId);
+        if (game && game.active) {
+            // Reduce time by 30 seconds, but don't go below 0
+            game.timeRemaining = Math.max(0, game.timeRemaining - 30);
+
+            // Emit updated time to all players in the room
+            io.to(data.roomId).emit('time_update', {
+                timeRemaining: game.timeRemaining
+            });
+
+            // Check if time has run out
+            if (game.timeRemaining <= 0) {
+                endGame(data.roomId, io, 'time_up');
+            }
+        }
+    });
 })
 
 // This helper function checks whether the text only contains word characters
@@ -686,6 +729,80 @@ app.get('/reloadStats', (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+function startGameTimer(roomId, io) {
+    const game = activeGames.get(roomId);
+    console.log('Starting game timer:', {
+        roomId,
+        gameExists: !!game,
+        timeRemaining: game?.timeRemaining
+    });
+
+    if (!game) return;
+
+    if (game.timer) {
+        console.log('Clearing existing timer');
+        clearInterval(game.timer);
+    }
+
+    game.timer = setInterval(() => {
+
+        if (game.timeRemaining <= 0) {
+            console.log('Game time up, ending game');
+            endGame(roomId, io, 'time_up');
+            return;
+        }
+
+        io.to(roomId).emit('time_update', {
+            timeRemaining: game.timeRemaining
+        });
+
+        game.timeRemaining--;
+    }, 1000);
+}
+function endGame(roomId, io, reason) {
+    const game = activeGames.get(roomId);
+    if (!game) return;
+
+    // Clear all timers
+    clearInterval(game.timer);
+    if (game.spawnTimers.weapons) clearInterval(game.spawnTimers.weapons);
+    if (game.spawnTimers.powerups) clearInterval(game.spawnTimers.powerups);
+
+    // Set game as inactive
+    game.active = false;
+    game.started = false;
+
+    // Calculate winner based on reason
+    let winner = null;
+    if (reason === 'last_player_standing' && game.alivePlayers.size === 1) {
+        winner = Array.from(game.alivePlayers)[0];
+    }
+
+    // Emit game end event to all players
+    io.to(roomId).emit('game_ended', {
+        reason: reason,
+        winner: winner,
+        finalStats: {
+            totalPlayers: game.players.size,
+            duration: GAME_CONFIG.DURATION - game.timeRemaining,
+        }
+    });
+
+    // Clean up game data after a delay
+    setTimeout(() => {
+        activeGames.delete(roomId);
+    }, 5000);
+}
+
+function checkGameEnd(roomId, io) {
+    const game = activeGames.get(roomId);
+    if (!game || !game.active) return;
+
+    // Check if only one player is alive
+    if (game.alivePlayers.size === 1) {
+        endGame(roomId, io, 'last_player_standing');
+    }
+}
 
 // Use a web server to listen at port 8000
 httpServer.listen(8000, () => {
