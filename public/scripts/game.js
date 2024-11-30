@@ -122,6 +122,140 @@ const PlayerManager = {
             }
         };
 
+        playerSprite.playMeleeAttackAnimation = function (scene, playerSprite, weaponType) {
+            // If already attacking or in cooldown, don't start new attack
+            if (playerSprite.isAttacking || playerSprite.attackCooldown) {
+                console.log('Cannot attack: already attacking or in cooldown');
+                return false;
+            }
+            
+            // Stop any movement if this is the local player
+            if (playerSprite === player) {
+                playerSprite.setVelocityX(0);
+            }       
+        
+            // Store the previous animation state to restore later if needed
+            const previousAnim = playerSprite.currentAnim;
+            
+            // Clear any existing animation timer
+            if (playerSprite.animationTimer) {
+                playerSprite.animationTimer.destroy();
+                playerSprite.animationTimer = null;
+            }
+        
+            // Set attacking state IMMEDIATELY
+            playerSprite.isAttacking = true;
+            playerSprite.attackCooldown = true; // Set cooldown immediately
+            playerSprite.currentAnim = null; // Prevent other animations from running
+            
+            
+            // Normalize weapon type to lowercase for consistency
+            weaponType = weaponType.toLowerCase();
+            
+            // Get weapon config
+            const weaponConfig = WEAPONS[weaponType.toUpperCase()];
+            if (!weaponConfig) {
+                console.error('Invalid weapon type:', weaponType);
+                return false;
+            }
+        
+            // Set up animation parameters based on weapon type
+            const maxFrames = weaponType === 'dagger' ? 13 : 9; // 14 frames for dagger, 9 for sword
+            const frameDelay = weaponType === 'dagger' ? 50 : 90; // Faster animation (50ms for dagger, 60ms for sword)
+            
+            // Function to get texture key
+            const getTextureKey = (frame) => {
+                const capitalizedWeapon = weaponType.charAt(0).toUpperCase() + weaponType.slice(1);
+                return `Player${playerSprite.number}_${playerSprite.direction}_Attack_${capitalizedWeapon}_${frame}`;
+            };
+        
+            // Create all frames at once
+            const frames = [];
+            for (let i = 1; i <= maxFrames; i++) {
+                const textureKey = getTextureKey(i);
+                if (!scene.textures.exists(textureKey)) {
+                    console.error('Texture not found:', textureKey);
+                    return false;
+                }
+                frames.push(textureKey);
+            }
+        
+            // Set initial frame
+            playerSprite.setTexture(frames[0]);
+            
+            // Flag to track if animation is active
+            let isAnimationActive = true;
+        
+            // Create a single timeline for the entire animation
+            let currentIndex = 0;
+            const animationLoop = () => {
+                if (!isAnimationActive) return;
+        
+                if (currentIndex < frames.length) {
+                    const currentTexture = frames[currentIndex];
+                    playerSprite.setTexture(currentTexture);
+                    currentIndex++;
+                    
+                    // Emit animation frame update for network play
+                    if (playerSprite === player) {
+                        const socket = Socket.getSocket();
+                        if (socket) {
+                            socket.emit('player_animation_frame', {
+                                roomId: gameState.roomId,
+                                id: socket.id,
+                                frame: currentTexture,
+                                weaponType: weaponType,
+                                direction: playerSprite.direction
+                            });
+                        }
+                    }
+                    
+                    scene.time.delayedCall(frameDelay, animationLoop);
+                } else {
+                    // Animation complete
+                    isAnimationActive = false;
+                    playerSprite.isAttacking = false;
+                    
+                    // Return to idle state
+                    const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`;
+                    playerSprite.setTexture(idleTexture);
+                    
+                    // Handle cooldown
+                    scene.time.delayedCall(weaponConfig.attackSpeed, () => {
+                        playerSprite.attackCooldown = false; // Remove cooldown after delay
+                        // Restore previous animation if it exists
+                        if (previousAnim) {
+                            playerSprite.currentAnim = previousAnim;
+                        }
+                        console.log('Attack cooldown complete');
+                    });
+                }
+            };
+        
+            // Override the sprite's texture setter during the animation
+            const originalSetTexture = playerSprite.setTexture;
+            playerSprite.setTexture = function(key) {
+                if (isAnimationActive) {
+                    // Only allow attack animation textures during the animation
+                    if (frames.includes(key)) {
+                        return originalSetTexture.call(this, key);
+                    }
+                } else {
+                    return originalSetTexture.call(this, key);
+                }
+            };
+        
+            // Start the animation loop
+            animationLoop();
+        
+            // Clean up after animation
+            scene.time.delayedCall(frameDelay * (maxFrames + 1), () => {
+                // Restore original setTexture function
+                playerSprite.setTexture = originalSetTexture;
+            });
+        
+            return true;
+        };
 
         // Add to players map
         this.players.set(playerData.id, playerSprite);
@@ -344,7 +478,6 @@ function preload() {
             'Jump': 13,
             'Hurt': 3,
             'Death': 10,
-            'Attack': 8,
         };
         const props = ['Bare', 'Dagger', 'Sword', 'Bow'];
 
@@ -353,9 +486,9 @@ function preload() {
             props.forEach(prop => {
                 Object.entries(actions).forEach(([action, frameCount]) => {
                     // Skip Attack animation for Bare prop
-                    if (action === 'Attack' && prop === 'Bare') {
-                        return;
-                    }
+                    // if (action === 'Attack' && prop === 'Bare') {
+                    //     return;
+                    // }
 
                     for (let frame = 1; frame <= frameCount; frame++) {
                         const path = `./assets/characters/Player${i}/${direction}/${action}/${prop}/${frame}.png`;
@@ -365,6 +498,22 @@ function preload() {
                     }
                 });
             });
+        });
+        // In your preload function where you load the attack animations
+        directions.forEach(direction => {
+            // Load dagger attack frames (13 frames)
+            for (let frame = 1; frame <= 13; frame++) {
+                const path = `./assets/characters/Player${i}/${direction}/Attack/Dagger/${frame}.png`;
+                const key = `Player${i}_${direction}_Attack_Dagger_${frame}`;
+                this.load.image(key, path);
+            }
+            
+            // Load sword attack frames (9 frames)
+            for (let frame = 1; frame <= 9; frame++) {
+                const path = `./assets/characters/Player${i}/${direction}/Attack/Sword/${frame}.png`;
+                const key = `Player${i}_${direction}_Attack_Sword_${frame}`;
+                this.load.image(key, path);
+            }
         });
     }
 }
@@ -486,6 +635,12 @@ function create() {
                 });
             }
         });
+
+        socket.on('player_attack', (attackData) => {
+            if (attackData.id !== socket.id) { // Only handle other players' attacks
+                handleOtherPlayerAttack.call(this, attackData);
+            }
+        });
     }
     // Initialize game state
     gameState.roomId = window.currentRoomId;
@@ -567,10 +722,34 @@ function setupPlayerControls(playerSprite) {
         delay: 16,
         callback: () => {
             if (!playerSprite.active) return;
-
+    
             let currentAnimation = null;
             let isMoving = false;
-
+    
+            // Don't allow any movement or animation changes during attack
+            if (playerSprite.isAttacking || playerSprite.attackCooldown) {
+                playerSprite.setVelocityX(0);
+                
+                // Important: Emit stopped movement to other players
+                const socket = Socket.getSocket();
+                if (socket) {
+                    socket.emit("player_movement", {
+                        roomId: gameState.roomId,
+                        id: socket.id,
+                        x: playerSprite.x,
+                        y: playerSprite.y,
+                        velocityX: 0,
+                        velocityY: playerSprite.body.velocity.y, // Keep vertical velocity for jumping
+                        direction: playerSprite.direction,
+                        animation: null,
+                        currentProp: playerSprite.currentProp,
+                        isMoving: false,
+                        isAttacking: true // Add this flag
+                    });
+                }
+                return;
+            }
+    
             // Handle horizontal movement
             if (cursors.left.isDown && !cursors.right.isDown) {
                 playerSprite.setVelocityX(-160);
@@ -584,19 +763,18 @@ function setupPlayerControls(playerSprite) {
                 isMoving = true;
             } else {
                 playerSprite.setVelocityX(0);
-                // Explicitly stop running animation when not moving horizontally
                 if (playerSprite.anims.currentAnim && playerSprite.anims.currentAnim.key.includes('Run')) {
                     playerSprite.anims.stop();
                 }
             }
-
-            // Handle jumping
+    
+            // Handle jumping - also prevent during attack
             if (cursors.up.isDown && playerSprite.body.touching.down) {
                 playerSprite.setVelocityY(-500);
                 currentAnimation = `Player${playerSprite.number}_${playerSprite.direction}_Jump_${playerSprite.currentProp}`;
                 isMoving = true;
             }
-
+    
             // Set idle state when not moving
             if (!isMoving) {
                 if (playerSprite.animationTimer) {
@@ -609,10 +787,10 @@ function setupPlayerControls(playerSprite) {
             } else if (currentAnimation && (playerSprite.currentAnim !== currentAnimation || !playerSprite.animationTimer)) {
                 playerSprite.playAnimation(currentAnimation);
             }
-
-            // Emit movement data
+    
+            // Only emit movement if not attacking
             const socket = Socket.getSocket();
-            if (socket) {
+            if (socket && !playerSprite.isAttacking) {
                 socket.emit("player_movement", {
                     roomId: gameState.roomId,
                     id: socket.id,
@@ -680,21 +858,66 @@ function handlePlayerUpdate(moveData) {
 }
 
 function createHealthBar() {
-    healthBar = this.add.graphics()
-    updateHealthBar.call(this)
+    // Create container for health bar elements
+    const barWidth = 200;
+    const barHeight = 20;
+    const padding = 2; // Border padding
+    
+    // Create text label
+    const healthText = this.add
+        .text(10, 5, 'Your Health', {
+            fontSize: '16px',
+            fill: '#fff',
+            fontWeight: 'bold'
+        });
+
+    // Create border (background)
+    healthBar = this.add.graphics();
+    healthBar.lineStyle(2, 0x000000); // White border
+    healthBar.fillStyle(0x000000, 1); // Black background
+    healthBar.strokeRoundedRect(10, 25, barWidth + padding * 2, barHeight + padding * 2, 5); // Rounded corners
+    healthBar.fillRoundedRect(10, 25, barWidth + padding * 2, barHeight + padding * 2, 5);
+
+    // Create health bar (foreground)
+    healthBar.fillStyle(0xff0000, 1); // Red health bar
+    healthBar.fillRoundedRect(10 + padding, 25 + padding, barWidth, barHeight, 4); // Slightly smaller radius for inner bar
+
+    // Store initial dimensions for updates
+    healthBar.barWidth = barWidth;
+    healthBar.barHeight = barHeight;
+    healthBar.padding = padding;
 }
 
 function updateHealthBar() {
-    healthBar.clear()
-    // Background
-    healthBar.fillStyle(0xff0000)
-    healthBar.fillRect(10, 10, 200, 20)
-    // Health
-    healthBar.fillStyle(0x00ff00)
-    healthBar.fillRect(10, 10, 200 * (player.health / 100), 20)
+    if (!healthBar || !player) return;
+
+    healthBar.clear();
+
+    // Redraw border
+    healthBar.lineStyle(2, 0xFFFFFF);
+    healthBar.fillStyle(0x000000, 1);
+    healthBar.strokeRoundedRect(10, 25, healthBar.barWidth + healthBar.padding * 2, healthBar.barHeight + healthBar.padding * 2, 5);
+    healthBar.fillRoundedRect(10, 25, healthBar.barWidth + healthBar.padding * 2, healthBar.barHeight + healthBar.padding * 2, 5);
+
+    // Redraw health bar
+    healthBar.fillStyle(0xff0000, 1);
+    const currentWidth = (healthBar.barWidth * (player.health / 100));
+    healthBar.fillRoundedRect(
+        10 + healthBar.padding, 
+        25 + healthBar.padding, 
+        currentWidth, 
+        healthBar.barHeight, 
+        4
+    );
 }
 
 function basicAttack(pointer) {
+    // First check if player can attack
+    if (player.isAttacking || player.attackCooldown) {
+        console.log('Cannot attack: already attacking or in cooldown');
+        return;
+    }
+
     if (!currentWeapon) {
         // Visual feedback for no weapon
         const text = this.add
@@ -714,39 +937,42 @@ function basicAttack(pointer) {
         return;
     }
 
-    if (player.attackCooldown) return;
-
-    const time = this.time.now;
-    if (time < player.lastAttackTime + currentWeapon.attackSpeed) return;
-
-    player.attackCooldown = true;
-    player.lastAttackTime = time;
-
-    // Use our custom playAnimation instead of Phaser's play
-    // const attackAnim = `Player${player.number}_${player.direction}_Attack_${player.currentProp}`;
-    // player.playAnimation(attackAnim, false);  // false for non-looping attack animation
-
     // Handle different weapon types
     switch (currentWeapon.name) {
+        case "dagger":
+        case "sword":
+            // Start attack animation
+            if (player.playMeleeAttackAnimation(this, player, currentWeapon.name)) {
+                meleeAttack.call(this, currentWeapon.damage, currentWeapon.range);
+                
+                // Emit attack event for multiplayer with all necessary data
+                const socket = Socket.getSocket();
+                if (socket) {
+                    socket.emit('player_attack', {
+                        roomId: gameState.roomId,
+                        id: socket.id,
+                        weaponType: currentWeapon.name,
+                        direction: player.direction,
+                        timestamp: Date.now()
+                    });
+                }
+            }
+            break;
         case "bow":
             chargeBow.call(this, pointer);
             break;
-        case "dagger":
-            meleeAttack.call(this, currentWeapon.damage, currentWeapon.range);
-            break;
-        case "sword":
-            meleeAttack.call(this, currentWeapon.damage, currentWeapon.range);
-            break;
     }
+}
 
-    // Reset attack cooldown
-    this.time.delayedCall(currentWeapon.attackSpeed, () => {
-        player.attackCooldown = false;
-
-        // Return to idle state after attack
-        const idleAnim = `Player${player.number}_${player.direction}_Hurt_${player.currentProp}`;
-        player.setTexture(`${idleAnim}_3`);  // Use frame 3 for idle
-    });
+function handleOtherPlayerAttack(attackData) {
+    const otherPlayer = PlayerManager.players.get(attackData.id);
+    if (otherPlayer) {
+        // Update player direction
+        otherPlayer.direction = attackData.direction;
+        
+        // Play attack animation for other player
+        otherPlayer.playMeleeAttackAnimation(this, otherPlayer, attackData.weaponType);
+    }
 }
 
 // function startItemSpawning() {
@@ -1117,28 +1343,28 @@ function meleeAttack(damage, range) {
     const attackAnim = `Player${player.number}_${player.direction}_Attack_${prop}`;
 
     // Play attack animation (not looping)
-    player.playAnimation(attackAnim, true);  // false for non-looping attack animation
+    //player.playAnimation(attackAnim, true);  // false for non-looping attack animation
 
     // Use a separate timer to track attack state
     this.time.delayedCall(800, () => {  // 800ms = roughly the duration of attack animation
         player.isAttacking = false;
         hitbox.destroy();
 
-        // Return to idle state
-        const idleAnim = `Player${player.number}_${player.direction}_Hurt_${prop}`;
-        player.setTexture(`${idleAnim}_3`);  // Use frame 3 for idle
+        // // Return to idle state
+        // const idleAnim = `Player${player.number}_${player.direction}_Hurt_${prop}`;
+        // player.setTexture(`${idleAnim}_3`);  // Use frame 3 for idle
     });
 
     // Emit attack event for multiplayer if needed
-    const socket = Socket.getSocket();
-    if (socket) {
-        socket.emit('player_attack', {
-            roomId: gameState.roomId,
-            id: socket.id,
-            direction: player.direction,
-            prop: prop
-        });
-    }
+    // const socket = Socket.getSocket();
+    // if (socket) {
+    //     socket.emit('player_attack', {
+    //         roomId: gameState.roomId,
+    //         id: socket.id,
+    //         direction: player.direction,
+    //         prop: prop
+    //     });
+    // }
 }
 
 function throwDagger(pointer) {
@@ -1738,6 +1964,25 @@ function loadCharacterSprites(scene, playerData) {
         });
     });
 
+    console.log('Loading attack textures for player', playerData.number);
+    directions.forEach(direction => {
+        props.forEach(prop => {
+            if (prop !== 'Bare') { // Skip Bare prop for attack animations
+                for (let frame = 1; frame <= 8; frame++) {
+                    const path = `./assets/characters/Player${playerData.number}/${direction}/Attack/${prop}/${frame}.png`;
+                    const key = `Player${playerData.number}_${direction}_Attack_${prop}_${frame}`;
+                    console.log(`Loading attack texture: ${key} from ${path}`);
+                    scene.load.image(key, path);
+                }
+            }
+        });
+    });
+
+    // Add texture load error handler
+    scene.load.on('loaderror', (fileObj) => {
+        console.error('Error loading texture:', fileObj.key, fileObj.src);
+    });
+
     return `Player${playerNumber}_right_Hurt_Bare_3`;
 }
 
@@ -1775,4 +2020,5 @@ function handleWeaponPickup(weapon) {
 document.addEventListener("DOMContentLoaded", () => {
     CheatMode.initialize()
 })
+
 

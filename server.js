@@ -424,6 +424,28 @@ io.on("connection", (socket) => {
     socket.on('powerup_collected', (data) => {
         io.to(data.roomId).emit('powerup_collected', data);
     });
+
+    socket.on('player_attack', (attackData) => {
+        console.log('Player attack received:', attackData);
+        const game = activeGames.get(attackData.roomId);
+        if (game) {
+            // Broadcast to all other players in the room
+            socket.to(attackData.roomId).emit('player_attack', attackData);
+        } else {
+            console.log('Game not found for room:', attackData.roomId);
+        }
+    });
+
+    socket.on('player_animation_frame', (frameData) => {
+        console.log('Animation frame received:', frameData);
+        const game = activeGames.get(frameData.roomId);
+        if (game) {
+            // Broadcast animation frames to all other players in the room
+            socket.to(frameData.roomId).emit('player_animation_frame', frameData);
+        } else {
+            console.log('Game not found for room:', frameData.roomId);
+        }
+    });
     // Add this helper function
 })
 

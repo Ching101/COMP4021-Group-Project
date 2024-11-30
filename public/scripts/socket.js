@@ -251,6 +251,33 @@ const Socket = (function () {
             }
         });
 
+        socket.on('player_attack', (attackData) => {
+            console.log('Received player attack:', attackData);
+            
+            // Skip if it's our own attack
+            if (attackData.id === socket.id) {
+                return;
+            }
+        
+            // Handle the attack animation for other players
+            if (window.game && window.game.scene.scenes[0]) {
+                const otherPlayer = PlayerManager.players.get(attackData.id);
+                if (otherPlayer) {
+                    console.log('Playing attack animation for player:', attackData.id);
+                    // Update player direction first
+                    otherPlayer.direction = attackData.direction;
+                    // Play the attack animation
+                    otherPlayer.playMeleeAttackAnimation(
+                        window.game.scene.scenes[0], 
+                        otherPlayer, 
+                        attackData.weaponType
+                    );
+                } else {
+                    console.log('Player not found for attack:', attackData.id);
+                }
+            }
+        });
+
         socket.on('join_error', (error) => {
             console.error('Failed to join game:', error);
             // Show error to user
@@ -265,39 +292,60 @@ const Socket = (function () {
         });
 
         socket.on('player_movement', (moveData) => {
-            //console.log('Received movement data:', moveData);
-
-            // Skip if it's our own movement
             if (moveData.id === socket.id) {
-                //console.log('Skipping own movement update');
                 return;
             }
-
+        
             if (window.game && window.game.scene.scenes[0]) {
-                //console.log('Handling movement update for player:', moveData.id);
-                handlePlayerUpdate(moveData);
-            } else {
-                console.log('Game scene not ready for movement update');
-            }
-        });
-
-        socket.on('player_action', (actionData) => {
-            if (window.game && window.game.scene.scenes[0] && actionData.id !== Socket.getSocket().id) {
-                const otherPlayer = PlayerManager.players.get(actionData.id);
+                const otherPlayer = PlayerManager.players.get(moveData.id);
                 if (otherPlayer) {
-                    switch (actionData.action) {
-                        case 'attack':
-                            // Visualize attack animation
-                            playAttackAnimation(otherPlayer, actionData);
-                            break;
-                        case 'use_item':
-                            // Show item use effects
-                            playItemAnimation(otherPlayer, actionData);
-                            break;
+                    // If player is attacking, don't allow movement
+                    if (otherPlayer.isAttacking || otherPlayer.attackCooldown) {
+                        otherPlayer.setVelocityX(0);
+                        return;
+                    }
+        
+                    // Update player position and velocity
+                    otherPlayer.setPosition(moveData.x, moveData.y);
+                    otherPlayer.setVelocity(moveData.velocityX, moveData.velocityY);
+        
+                    // Handle animation state
+                    if (moveData.isMoving && moveData.animation) {
+                        if (otherPlayer.currentAnim !== moveData.animation) {
+                            otherPlayer.playAnimation(moveData.animation);
+                        }
+                    } else {
+                        // Stop animation and set idle texture when not moving
+                        if (otherPlayer.animationTimer) {
+                            otherPlayer.animationTimer.destroy();
+                            otherPlayer.animationTimer = null;
+                        }
+                        otherPlayer.currentAnim = null;
+                        otherPlayer.setTexture(
+                            `Player${otherPlayer.number}_${otherPlayer.direction}_Hurt_${otherPlayer.currentProp}_3`
+                        );
                     }
                 }
             }
         });
+
+        // socket.on('player_action', (actionData) => {
+        //     if (window.game && window.game.scene.scenes[0] && actionData.id !== Socket.getSocket().id) {
+        //         const otherPlayer = PlayerManager.players.get(actionData.id);
+        //         if (otherPlayer) {
+        //             switch (actionData.action) {
+        //                 case 'attack':
+        //                     // Visualize attack animation
+        //                     playAttackAnimation(otherPlayer, actionData);
+        //                     break;
+        //                 case 'use_item':
+        //                     // Show item use effects
+        //                     playItemAnimation(otherPlayer, actionData);
+        //                     break;
+        //             }
+        //         }
+        //     }
+        // });
     }
 
     const disconnect = function () {
