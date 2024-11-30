@@ -282,17 +282,23 @@ const PlayerManager = {
                     isAnimationActive = false
                     playerSprite.isAttacking = false
 
-                    // Return to idle state
+                    // Check movement state immediately after attack ends
+            if (playerSprite === player) {
+                // For local player, check actual keyboard state
+                if (cursors.left.isDown || cursors.right.isDown) {
+                    const runAnim = `Player${playerSprite.number}_${playerSprite.direction}_Run_${playerSprite.currentProp}`
+                    playerSprite.currentAnim = runAnim
+                    playerSprite.playAnimation(runAnim, true) // Force restart the animation
+                } else {
                     const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`
                     playerSprite.setTexture(idleTexture)
+                        playerSprite.currentAnim = null
+                }
+            }
 
                     // Handle cooldown
                     scene.time.delayedCall(weaponConfig.attackSpeed, () => {
-                        playerSprite.attackCooldown = false // Remove cooldown after delay
-                        // Restore previous animation if it exists
-                        if (previousAnim) {
-                            playerSprite.currentAnim = previousAnim
-                        }
+                        playerSprite.attackCooldown = false
                         console.log("Attack cooldown complete")
                     })
                 }
@@ -1910,9 +1916,9 @@ function updateActivePowerupsDisplay(scene, powerupConfig) {
     }
 
     const updateDisplay = () => {
-        const baseX = 10
-        const baseY = 60
-        const spacing = 40
+        const baseX = 25
+        const baseY = 25
+        const spacing = 80
         const index = powerupName === "attack" ? 0 : 1
         const x = baseX + spacing * index
 
@@ -1923,19 +1929,19 @@ function updateActivePowerupsDisplay(scene, powerupConfig) {
 
         // Create icon background (semi-transparent black circle)
         scene.add
-            .circle(x + 20, baseY + 20, 15, 0x000000, 0.3)
+            .circle(x + 20, baseY + 20, 30, 0x000000, 0.3)
             .setDepth(99)
             .setScrollFactor(0)
 
         // Create powerup sprite
         powerupInfo.displaySprite = scene.add
             .sprite(x + 20, baseY + 20, `powerup_${powerupName}`)
-            .setScale(0.5)
+            .setScale(0.8)
             .setDepth(100)
             .setScrollFactor(0)
 
         // Always show count text (even for count = 1)
-        powerupInfo.countText = scene.add.text(x + 30, baseY + 5, `x${powerupInfo.count}`, {
+        powerupInfo.countText = scene.add.text(x + 35, baseY , `x${powerupInfo.count}`, {
             fontSize: '14px',
             fill: '#fff',
             stroke: '#000',
@@ -1947,9 +1953,9 @@ function updateActivePowerupsDisplay(scene, powerupConfig) {
         // Show duration
         if (powerupInfo.duration) {
             const remainingSeconds = Math.ceil(powerupInfo.duration / 1000);
-            powerupInfo.durationText = scene.add.text(x + 20, baseY + 35,
+            powerupInfo.durationText = scene.add.text(x + 20, baseY + 45,
                 `${remainingSeconds}s`, {
-                fontSize: '12px',
+                fontSize: '14px',
                 fill: '#fff',
                 stroke: '#000',
                 strokeThickness: 2
