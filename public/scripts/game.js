@@ -836,10 +836,11 @@ function setupPlayerControls(playerSprite) {
     const movementTimer = this.time.addEvent({
         delay: 16,
         callback: () => {
-            if (!playerSprite.active) return
+            // Add check for player death state
+            if (!playerSprite.active || playerSprite.isDead) return;
 
-            let currentAnimation = null
-            let isMoving = false
+            let currentAnimation = null;
+            let isMoving = false;
 
             // Don't allow any movement or animation changes during attack
             // if (playerSprite.isAttacking || playerSprite.attackCooldown) {
@@ -885,7 +886,8 @@ function setupPlayerControls(playerSprite) {
                     playerSprite.playAnimation(currentAnimation);
                 //}
             } else {
-                playerSprite.setVelocityX(0)
+                playerSprite.setVelocityX(0);
+                isMoving = false;
             }
 
             // Handle jumping - also prevent during attack
@@ -1784,6 +1786,10 @@ function handlePlayerDeath(playerSprite) {
 
     // Mark player as dead
     playerSprite.isDead = true;
+
+    // Stop all movement and physics
+    playerSprite.setVelocity(0, 0);
+    playerSprite.body.enable = false;  // Disable physics body
 
     // Clear weapon if player has one
     if (playerSprite.currentWeapon) {
