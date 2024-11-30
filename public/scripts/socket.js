@@ -75,9 +75,6 @@ const Socket = (function () {
             // Update UI to show connection progress
             $('.start-button').text('Connecting players...');
 
-            // Add a loading indicator
-            const loadingEl = $('<div class="loading-spinner"></div>');
-            $('#gameContainer').prepend(loadingEl);
 
             window.currentRoomId = data.roomId;
             window.hostId = data.hostId;
@@ -90,33 +87,47 @@ const Socket = (function () {
 
         // Update game started handler
         socket.on('game_started', (gameData) => {
+            console.time('gameLoadingTime');
+            console.log('[Loading] Game start received:', new Date().toISOString());
 
-            console.log('Game started with data:', gameData);
+            const loadingEl = $('<div class="loading-spinner"></div>');
+            $('#gameContainer').append(loadingEl);
 
+            // Add timer initialization
+            const timerElement = $('<div class="game-timer">3:00</div>');
+            $('#game').append(timerElement);
+            gameState.timer.element = timerElement[0];
+            timerElement.fadeIn(500);
+
+            console.log('Timer element initialized:', {
+                element: gameState.timer.element,
+                parent: $('#game').length,
+                visible: timerElement.is(':visible')
+            });
+
+            console.log('[Loading] Room check:', {
+                current: window.currentRoomId,
+                received: gameData.roomId
+            });
             // Ensure we're in the correct room
             if (gameData.roomId !== window.currentRoomId) {
                 console.error('Room ID mismatch');
                 return;
             }
 
-            // Hide lobby and show game for all players// Remove loading indicator
-            $('.loading-spinner').remove();
 
+            console.log('[Loading] Hiding lobby, showing game container');
             $('.lobby-container').hide();
             $('#gameContainer').show();
 
-            // Initialize game with complete game data
+            console.log('[Loading] Starting game initialization');
             startGame(gameData);
 
             // Stop refreshing when game starts
             GameStats.stopAutoRefresh();
+            console.timeEnd('gameLoadingTime'); // End timing
         });
 
-        socket.on('player_ready', (playerData) => {
-            if (window.game && window.game.scene.scenes[0]) {
-                handlePlayerJoined.call(window.game.scene.scenes[0], playerData);
-            }
-        });
 
         // Update the weapon_spawned handler to use .call() like powerups
         socket.on('weapon_spawned', (weaponData) => {
@@ -256,11 +267,13 @@ const Socket = (function () {
 
         socket.on('player_attack', (attackData) => {
             console.log('Received player attack:', attackData);
-            
+
+            // Skip if it's our own attack
             if (attackData.id === socket.id) {
                 return;
             }
-        
+
+            // Handle the attack animation for other players
             if (window.game && window.game.scene.scenes[0]) {
                 const otherPlayer = PlayerManager.players.get(attackData.id);
                 if (otherPlayer) {
@@ -271,8 +284,8 @@ const Socket = (function () {
                     otherPlayer.direction = attackData.direction;
                     // Play the attack animation
                     otherPlayer.playMeleeAttackAnimation(
-                        window.game.scene.scenes[0], 
-                        otherPlayer, 
+                        window.game.scene.scenes[0],
+                        otherPlayer,
                         attackData.weaponType
                     );
                 }
@@ -312,7 +325,7 @@ const Socket = (function () {
             if (moveData.id === socket.id) {
                 return;
             }
-        
+
             if (window.game && window.game.scene.scenes[0]) {
                 const otherPlayer = PlayerManager.players.get(moveData.id);
                 if (otherPlayer) {
@@ -320,11 +333,11 @@ const Socket = (function () {
                     if (otherPlayer.isAttacking || otherPlayer.attackCooldown) {
                         return;
                     }
-        
+
                     // Update player position and velocity
                     otherPlayer.setPosition(moveData.x, moveData.y);
                     otherPlayer.setVelocity(moveData.velocityX, moveData.velocityY);
-        
+
                     // Handle animation state
                     if (moveData.isMoving && moveData.animation) {
                         if (otherPlayer.currentAnim !== moveData.animation) {
@@ -362,8 +375,89 @@ const Socket = (function () {
         //         }
         //     }
         // });
-    }
 
+        // Add these event handlers inside connect function
+        socket.on('time_update', (data) => {
+
+
+            if (gameState.timer.element) {
+                const minutes = Math.floor(data.timeRemaining / 60);
+                const seconds = data.timeRemaining % 60;
+                const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                console.log('Updating timer display:', timeString);
+
+                gameState.timer.element.textContent = timeString;
+                if (data.timeRemaining <= 30) {
+                    console.log('Adding warning class to timer');
+                    gameState.timer.element.classList.add('warning');
+                }
+            } else {
+                console.warn('Timer element not found in gameState');
+            }
+        });
+
+        socket.on('game_ended', (data) => {
+            // Stop all game activities
+            gameState.gameStarted = false;
+
+            // Remove all existing socket listeners for game events
+            socket.removeAllListeners('player_movement');
+            socket.removeAllListeners('player_attack');
+            socket.removeAllListeners('weapon_collected');
+            socket.removeAllListeners('powerup_collected');
+
+            // Clear all game intervals and timers
+            if (gameState.timer.interval) {
+                clearInterval(gameState.timer.interval);
+            }
+
+            //Display appropriate end game message
+            if (data.reason === 'time_up') {
+                $('#game-over-reason').text('Time\'s Up!');
+            } else if (data.reason === 'last_player_standing') {
+                $('#game-over-reason').text('Last Player Standing!');
+            }
+
+            if (data.winner === Socket.getSocket().id) {
+                $('#victory-text').show();
+                $('#defeat-text').hide();
+                // Update game record for win
+                GameRecord.update(true);
+            } else {
+                $('#victory-text').hide();
+                $('#defeat-text').show();
+                // Update game record for loss
+                GameRecord.update(false);
+            }
+            $('#gameContainer').hide();
+            // Show end game screen
+            $('#game-over-page').fadeIn(1000);
+            const gameStats = {
+                damageDealt: gameState.damageDealt || 0,
+                powerupsCollected: gameState.powerupsCollected || 0,
+                survivalTime: Math.floor((Date.now() - gameState.startTime) / 1000)
+            };
+
+            $('#damage-dealt').text(gameStats.damageDealt);
+            $('#powerups-collected').text(gameStats.powerupsCollected);
+            $('#survival-time').text(gameStats.survivalTime + 's');
+
+            // Destroy the Phaser game instance
+            if (window.game) {
+                window.game.destroy(true);
+                window.game = null;
+            }
+
+            // Clean up game state
+            gameState.players.clear();
+            gameState.weapons.clear();
+            gameState.powerups.clear();
+            gameState.roomId = null;  // Clear room ID
+
+            // Resume stats auto-refresh
+            GameStats.startAutoRefresh();
+        });
+    }
     const disconnect = function () {
         GameStats.stopAutoRefresh()
         socket.disconnect()

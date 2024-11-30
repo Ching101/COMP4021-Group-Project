@@ -1,18 +1,26 @@
 {
+  "1": {
+    "username": "1",
+    "password": "$2b$10$JMitF5J8nNegX705ypEyde/KPLduE7o6E3UY3.M7n7mDXaUtyZwAK",
+    "gameRecord": {
+      "wins": 7,
+      "losses": 0
+    }
+  },
   "123": {
     "username": "123",
     "password": "$2b$10$OMgOKB.AI6vU5eVLvDxMM.7/a1XdxtvXm8avKIzOpw0wcKX27Yz32",
     "gameRecord": {
-      "wins": 3,
-      "losses": 0
+      "wins": 4,
+      "losses": 1
     }
   },
   "Oscar": {
     "username": "Oscar",
     "password": "$2b$10$hbSJTO2pxlocDJ4jQl8kJ.GR6uRf9C.DvkFaAl1x1vYx7lWS1Dq0y",
     "gameRecord": {
-      "wins": 3,
-      "losses": 0
+      "wins": 12,
+      "losses": 1
     }
   },
   "peter": {
