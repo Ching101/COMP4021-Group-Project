@@ -137,12 +137,12 @@ const PlayerManager = {
             this.maxFrames = this.currentAnim.includes("Run")
                 ? 7
                 : this.currentAnim.includes("Jump")
-                ? 13
-                : this.currentAnim.includes("Hurt")
-                ? 3
-                : this.currentAnim.includes("Attack")
-                ? 8
-                : 10
+                    ? 13
+                    : this.currentAnim.includes("Hurt")
+                        ? 3
+                        : this.currentAnim.includes("Attack")
+                            ? 8
+                            : 10
 
             // Only create timer for running animations or if explicitly requested
             const shouldLoop = this.currentAnim.includes("Run")
@@ -283,18 +283,18 @@ const PlayerManager = {
                     playerSprite.isAttacking = false
 
                     // Check movement state immediately after attack ends
-            if (playerSprite === player) {
-                // For local player, check actual keyboard state
-                if (cursors.left.isDown || cursors.right.isDown) {
-                    const runAnim = `Player${playerSprite.number}_${playerSprite.direction}_Run_${playerSprite.currentProp}`
-                    playerSprite.currentAnim = runAnim
-                    playerSprite.playAnimation(runAnim, true) // Force restart the animation
-                } else {
-                    const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`
-                    playerSprite.setTexture(idleTexture)
-                        playerSprite.currentAnim = null
-                }
-            }
+                    if (playerSprite === player) {
+                        // For local player, check actual keyboard state
+                        if (cursors.left.isDown || cursors.right.isDown) {
+                            const runAnim = `Player${playerSprite.number}_${playerSprite.direction}_Run_${playerSprite.currentProp}`
+                            playerSprite.currentAnim = runAnim
+                            playerSprite.playAnimation(runAnim, true) // Force restart the animation
+                        } else {
+                            const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`
+                            playerSprite.setTexture(idleTexture)
+                            playerSprite.currentAnim = null
+                        }
+                    }
 
                     // Handle cooldown
                     scene.time.delayedCall(weaponConfig.attackSpeed, () => {
@@ -404,13 +404,13 @@ const WEAPONS = {
         isThrowable: false,
     },
     BOW: {
-        name: "bow",
+        name: 'bow',
         damage: 35,
-        chargeTime: 500,
+        attackSpeed: 500,
         range: 600,
-        projectileSpeed: 800,
-        isThrowable: false,
-    },
+        chargeTime: 1000,  // Maximum charge time in ms
+        projectileSpeed: 800
+    }
 }
 
 const POWERUPS = {
@@ -604,6 +604,15 @@ function preload() {
             }
         })
     }
+
+    // Load arrow sprite
+    this.load.image('arrow', 'assets/weapons/arrow.png');
+    console.log('[Preload] Loading arrow texture');
+
+    // Add error handler for texture loading
+    this.load.on('loaderror', function (fileObj) {
+        console.error('[Preload] Error loading file:', fileObj.key, fileObj.src);
+    });
 }
 
 function updateGameStats() {
@@ -861,20 +870,20 @@ function setupPlayerControls(playerSprite) {
             if (cursors.left.isDown && !cursors.right.isDown) {
                 // Only set velocity if not attacking
                 //if (!playerSprite.isAttacking) {
-                    playerSprite.setVelocityX(-160 * playerSprite.speedMultiplier);
-                    currentAnimation = `Player${playerSprite.number}_left_Run_${playerSprite.currentProp}`;
-                    playerSprite.direction = 'left';
-                    isMoving = true;
-                    playerSprite.playAnimation(currentAnimation);
+                playerSprite.setVelocityX(-160 * playerSprite.speedMultiplier);
+                currentAnimation = `Player${playerSprite.number}_left_Run_${playerSprite.currentProp}`;
+                playerSprite.direction = 'left';
+                isMoving = true;
+                playerSprite.playAnimation(currentAnimation);
                 //}
             } else if (cursors.right.isDown && !cursors.left.isDown) {
                 // Only set velocity if not attacking
                 //if (!playerSprite.isAttacking) {
-                    playerSprite.setVelocityX(160 * playerSprite.speedMultiplier);
-                    currentAnimation = `Player${playerSprite.number}_right_Run_${playerSprite.currentProp}`;
-                    playerSprite.direction = 'right';
-                    isMoving = true;
-                    playerSprite.playAnimation(currentAnimation);
+                playerSprite.setVelocityX(160 * playerSprite.speedMultiplier);
+                currentAnimation = `Player${playerSprite.number}_right_Run_${playerSprite.currentProp}`;
+                playerSprite.direction = 'right';
+                isMoving = true;
+                playerSprite.playAnimation(currentAnimation);
                 //}
             } else {
                 playerSprite.setVelocityX(0)
@@ -904,7 +913,7 @@ function setupPlayerControls(playerSprite) {
 
             // Only emit movement if not attacking
             const socket = Socket.getSocket()
-            if (socket ) { //&& !playerSprite.isAttacking
+            if (socket) { //&& !playerSprite.isAttacking
                 socket.emit("player_movement", {
                     roomId: gameState.roomId,
                     id: socket.id,
@@ -1006,7 +1015,6 @@ function updateHealthBar() {
 }
 
 function basicAttack(pointer) {
-    // First check if player can attack
     if (player.isAttacking || player.attackCooldown) {
         return;
     }
@@ -1034,8 +1042,10 @@ function basicAttack(pointer) {
         return
     }
 
-    // Handle different weapon types
     switch (currentWeapon.name) {
+        case 'bow':
+            handleBowAttack.call(this, pointer);
+            break;
         case "dagger":
         case "sword":
             // Start attack animation
@@ -1064,9 +1074,6 @@ function basicAttack(pointer) {
                     })
                 }
             }
-            break
-        case "bow":
-            chargeBow.call(this, pointer)
             break
     }
 }
@@ -1402,7 +1409,7 @@ function applyPowerupEffect(playerSprite, powerupConfig) {
                 playerSprite.attackMultiplier = 1;
                 console.log('Attack multiplier reset to 1');
             }, powerupConfig.duration || 10000);
-            break;
+            break
 
         case 'speed':
             const baseSpeed = 160; // Base movement speed
@@ -1757,141 +1764,255 @@ function throwDagger(pointer) {
     })
 }
 
-function chargeBow(pointer) {
-    if (!currentWeapon) return
+// New bow attack handler
+function handleBowAttack(pointer) {
+    console.log('[BOW] Starting bow attack handler');
 
-    const chargeStart = this.time.now
+    // Check if player can attack
+    if (player.isAttacking || player.attackCooldown) {
+        console.log('[BOW] Attack blocked - isAttacking:', player.isAttacking, 'cooldown:', player.attackCooldown);
+        return;
+    }
 
-    // Visual charge effect
+    // Start charging
+    const chargeStartTime = Date.now();
+    player.isAttacking = true;
+    console.log('[BOW] Charge started at:', chargeStartTime);
+
+    // Create charge bar
     const chargeBar = this.add.rectangle(
         player.x,
         player.y - 40,
         0,
         5,
         0xff0000
-    )
+    ).setDepth(5);
+    console.log('[BOW] Charge bar created');
 
-    // Charge update
+    // Add the missing charge interval
     const chargeInterval = this.time.addEvent({
         delay: 16,
         callback: () => {
-            const chargeTime = this.time.now - chargeStart
-            const chargePercent = Math.min(
-                chargeTime / currentWeapon.chargeTime,
-                1
-            )
-            chargeBar.width = 40 * chargePercent
-
-            // Add glow effect as charge increases
-            chargeBar.setFillStyle(
-                0xff0000 + (Math.floor(chargePercent * 255) << 8)
-            )
+            const chargeTime = Date.now() - chargeStartTime;
+            const chargePercent = Math.min(chargeTime / WEAPONS.BOW.chargeTime, 1);
+            chargeBar.width = 40 * chargePercent;
+            chargeBar.setPosition(player.x, player.y - 40);
+            chargeBar.setFillStyle(0xff0000 + (Math.floor(chargePercent * 255) << 8));
         },
-        loop: true,
-    })
+        loop: true
+    });
 
-    // Release on mouse up
+    // Emit charge start event
+    Socket.getSocket().emit('bow_charge_start', {
+        roomId: gameState.roomId,
+        playerId: Socket.getSocket().id,
+        position: { x: player.x, y: player.y }
+    });
+    console.log('[BOW] Charge start event emitted');
+
+    // Handle release
     const releaseFunction = () => {
-        chargeInterval.destroy()
-        chargeBar.destroy()
+        console.log('[BOW] Release function triggered');
+        chargeInterval.destroy();
+        chargeBar.destroy();
+        player.isAttacking = false;
 
-        const chargeTime = this.time.now - chargeStart
-        const power = Math.min(chargeTime / currentWeapon.chargeTime, 1)
+        const chargeTime = Date.now() - chargeStartTime;
+        const power = Math.min(chargeTime / WEAPONS.BOW.chargeTime, 1);
+        console.log('[BOW] Release power:', power);
 
-        // Add charge feedback
-        const powerText = this.add
-            .text(
-                player.x,
-                player.y - 50,
-                `Power: ${Math.floor(power * 100)}%`,
-                {
-                    fontSize: "16px",
-                    fill: "#fff",
-                }
-            )
-            .setOrigin(0.5)
+        // Calculate angle between player and pointer
+        const angle = Phaser.Math.Angle.Between(
+            player.x,
+            player.y,
+            pointer.worldX,
+            pointer.worldY
+        );
+        console.log('[BOW] Release angle:', angle);
 
-        this.tweens.add({
-            targets: powerText,
-            y: powerText.y - 30,
-            alpha: 0,
-            duration: 1000,
-            onComplete: () => powerText.destroy(),
-        })
+        // Create arrow through ArrowManager
+        const arrowId = `arrow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log('[BOW] Creating arrow with ID:', arrowId);
 
-        fireArrow.call(this, pointer, power)
+        ArrowManager.createArrow(this, {
+            arrowId: arrowId,
+            position: { x: player.x, y: player.y },
+            angle: angle,
+            power: power,
+            playerId: Socket.getSocket().id
+        });
 
-        this.input.off("pointerup", releaseFunction)
-    }
+        // Emit arrow release event
+        Socket.getSocket().emit('bow_charge_release', {
+            roomId: gameState.roomId,
+            playerId: Socket.getSocket().id,
+            position: { x: player.x, y: player.y },
+            power: power,
+            angle: angle,
+            arrowId: arrowId
+        });
+        console.log('[BOW] Arrow release event emitted');
 
-    this.input.on("pointerup", releaseFunction)
+        // Set cooldown
+        player.attackCooldown = true;
+        this.time.delayedCall(WEAPONS.BOW.attackSpeed, () => {
+            player.attackCooldown = false;
+            console.log('[BOW] Attack cooldown ended');
+        });
+
+        this.input.off('pointerup', releaseFunction);
+    };
+
+    this.input.on('pointerup', releaseFunction);
 }
 
-function fireArrow(pointer, power) {
-    const arrow = this.physics.add.sprite(player.x, player.y, "arrow")
+const ArrowManager = {
+    arrows: new Map(),
+    ARROW_CONFIG: {
+        GRAVITY: 300,
+        BASE_SPEED: 800,
+        MAX_DISTANCE: 1000,
+        LIFETIME: 3000,
+        DAMAGE_MULTIPLIER: 1.5
+    },
 
-    // Calculate angle between player and pointer
-    const angle = Phaser.Math.Angle.Between(
-        player.x,
-        player.y,
-        pointer.worldX,
-        pointer.worldY
-    )
+    createArrow(scene, data) {
+        console.log('[ArrowManager] Creating arrow:', data);
 
-    // Set arrow rotation to match angle
-    arrow.rotation = angle
+        const arrow = scene.physics.add.sprite(
+            data.position.x,
+            data.position.y,
+            'arrow'
+        ).setDepth(3);
 
-    // Calculate velocity components using angle
-    const speed = currentWeapon.projectileSpeed * power
-    arrow.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed)
+        // Enhanced physics setup
+        arrow.rotation = data.angle;
+        const speed = this.ARROW_CONFIG.BASE_SPEED * data.power;
 
-    // Add slight gravity effect
-    arrow.body.setGravityY(150)
+        // Add velocity with improved trajectory
+        arrow.body.setVelocity(
+            Math.cos(data.angle) * speed,
+            Math.sin(data.angle) * speed
+        );
 
-    // Add collision with platforms
-    this.physics.add.collider(arrow, platforms, (arrow) => {
-        // Stick the arrow where it hit
-        arrow.body.setVelocity(0, 0)
-        arrow.body.setGravityY(0)
-        arrow.body.setImmovable(true)
+        // Add gravity and air resistance
+        arrow.body.setGravityY(this.ARROW_CONFIG.GRAVITY);
+        arrow.body.setDrag(10, 0);
 
-        // Destroy arrow after a delay
-        this.time.delayedCall(2000, () => {
-            if (arrow && arrow.active) {
-                arrow.destroy()
+        // Store additional data for physics validation
+        arrow.initialData = {
+            speed,
+            angle: data.angle,
+            timestamp: Date.now(),
+            origin: { ...data.position }
+        };
+
+        // Rotate arrow based on velocity
+        scene.events.on('update', () => {
+            if (arrow.active) {
+                const velocity = arrow.body.velocity;
+                arrow.rotation = Math.atan2(velocity.y, velocity.x);
             }
-        })
-    })
+        });
 
-    // Make arrow persist longer if it doesn't hit anything
-    this.time.delayedCall(3000, () => {
-        if (arrow && arrow.active) {
-            arrow.destroy()
+        // Store arrow reference
+        this.arrows.set(data.arrowId, arrow);
+
+        // Add collision detection
+        this.setupCollisions(scene, arrow, data);
+
+        // Add lifetime to prevent memory leaks
+        scene.time.delayedCall(this.ARROW_CONFIG.LIFETIME, () => {
+            if (arrow.active) {
+                this.removeArrow(data.arrowId);
+            }
+        });
+
+        return arrow;
+    },
+
+    setupCollisions(scene, arrow, data) {
+        // Collision with platforms
+        scene.physics.add.collider(arrow, platforms, () => {
+            this.handleArrowStick(arrow, data);
+        });
+
+        // Collision with players
+        PlayerManager.players.forEach(otherPlayer => {
+            if (otherPlayer.id !== data.playerId) {
+                scene.physics.add.overlap(arrow, otherPlayer, () => {
+                    this.handleArrowHit(scene, arrow, otherPlayer, data);
+                });
+            }
+        });
+    },
+
+    handleArrowStick(arrow, data) {
+        if (!arrow.active) return;
+
+        // Stop arrow movement
+        arrow.body.setVelocity(0, 0);
+        arrow.body.setGravityY(0);
+        arrow.body.setImmovable(true);
+
+        // Remove after delay
+        setTimeout(() => this.removeArrow(data.arrowId), 2000);
+    },
+
+    handleArrowHit(scene, arrow, hitPlayer, data) {
+        if (!arrow.active) return;
+
+        // Calculate damage based on speed and distance
+        const distance = Phaser.Math.Distance.Between(
+            data.position.x,
+            data.position.y,
+            arrow.x,
+            arrow.y
+        );
+
+        const speed = Math.sqrt(
+            arrow.body.velocity.x ** 2 +
+            arrow.body.velocity.y ** 2
+        );
+
+        const baseDamage = WEAPONS.BOW.damage;
+        const speedMultiplier = speed / this.ARROW_CONFIG.BASE_SPEED;
+        const distanceMultiplier = 1 - (distance / this.ARROW_CONFIG.MAX_DISTANCE);
+
+        const finalDamage = Math.round(
+            baseDamage *
+            speedMultiplier *
+            distanceMultiplier *
+            this.ARROW_CONFIG.DAMAGE_MULTIPLIER
+        );
+
+        // Emit hit event
+        Socket.getSocket().emit('bow_arrow_hit', {
+            roomId: gameState.roomId,
+            arrowId: data.arrowId,
+            targetId: hitPlayer.id,
+            damage: finalDamage,
+            position: { x: arrow.x, y: arrow.y },
+            hitData: {
+                speed,
+                distance,
+                angle: arrow.rotation
+            }
+        });
+
+        // Remove arrow
+        this.removeArrow(data.arrowId);
+    },
+
+    removeArrow(arrowId) {
+        const arrow = this.arrows.get(arrowId);
+        if (arrow) {
+            arrow.destroy();
+            this.arrows.delete(arrowId);
+            console.log('[ArrowManager] Arrow removed:', arrowId);
         }
-    })
-
-    // Add debug visualization of arrow path
-    if (false && debugText) {
-        const arrowPath = this.add.graphics()
-        arrowPath.lineStyle(1, 0xff0000, 0.5)
-        arrowPath.beginPath()
-        arrowPath.moveTo(arrow.x, arrow.y)
-
-        this.time.addEvent({
-            delay: 16,
-            callback: () => {
-                if (arrow.active) {
-                    arrowPath.lineTo(arrow.x, arrow.y)
-                }
-            },
-            repeat: 50,
-        })
-
-        this.time.delayedCall(1000, () => {
-            arrowPath.destroy()
-        })
     }
-}
+};
 
 function updateActivePowerupsDisplay(scene, powerupConfig) {
     if (!scene || !powerupConfig || powerupConfig.name === "health") return
@@ -1950,7 +2071,7 @@ function updateActivePowerupsDisplay(scene, powerupConfig) {
             .setScrollFactor(0)
 
         // Always show count text (even for count = 1)
-        powerupInfo.countText = scene.add.text(x + 35, baseY , `x${powerupInfo.count}`, {
+        powerupInfo.countText = scene.add.text(x + 35, baseY, `x${powerupInfo.count}`, {
             fontSize: '14px',
             fill: '#fff',
             stroke: '#000',

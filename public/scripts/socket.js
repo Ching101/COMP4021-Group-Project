@@ -150,7 +150,7 @@ const Socket = (function () {
                 powerupsCollected: 0,
                 startTime: Date.now()
             };
-            
+
             // Start periodic stats update
             gameState.statsInterval = setInterval(updateGameStats, 1000);
         });
@@ -241,7 +241,7 @@ const Socket = (function () {
                 position: { x: data.x, y: data.y },
                 isLocalPlayer: data.playerId === socket.id
             });
-            
+
             const scene = window.game?.scene?.scenes[0];
             if (!scene) {
                 console.error('❌ No active scene found for powerup cleanup');
@@ -249,8 +249,8 @@ const Socket = (function () {
                 return;
             }
             console.log('✓ Scene found:', scene.scene.key);
-        
-        
+
+
             // Update the collecting player's effects
             const playerSprite = PlayerManager.players.get(data.playerId);
             if (playerSprite) {
@@ -271,31 +271,31 @@ const Socket = (function () {
                         duration: data.powerupType.duration,
                         multiplier: data.powerupType.multiplier
                     };
-                    
+
                     // Apply the powerup effect
                     applyPowerupEffect(playerSprite, data.powerupType);
-                    
+
                     // Update display for non-health powerups
                     if (powerupConfig.name !== 'health') {
                         // Initialize gameState.activePowerups if it doesn't exist
                         if (!gameState.activePowerups) {
                             gameState.activePowerups = {};
                         }
-                        
+
                         // Pass the normalized powerup configuration
                         updateActivePowerupsDisplay(scene, powerupConfig);
                     }
-                    
+
                     showPowerupFeedback(scene, playerSprite, powerupConfig.name, true);
                 }
             }
-        
+
             // Clean up powerup sprites
-            const powerupsToClean = scene.children.list.filter(child => 
-                child.texture && 
-                child.texture.key && 
+            const powerupsToClean = scene.children.list.filter(child =>
+                child.texture &&
+                child.texture.key &&
                 child.texture.key.startsWith('powerup_') &&
-                Math.abs(child.x - data.x) < 20 && 
+                Math.abs(child.x - data.x) < 20 &&
                 Math.abs(child.y - data.y) < 20
             );
 
@@ -303,7 +303,7 @@ const Socket = (function () {
                 count: powerupsToClean.length,
                 positions: powerupsToClean.map(p => ({ x: p.x, y: p.y, key: p.texture.key }))
             });
-        
+
             powerupsToClean.forEach(powerupSprite => {
                 try {
                     console.log('Cleaning up powerup:', {
@@ -314,24 +314,24 @@ const Socket = (function () {
                     // Remove from gameState
                     gameState.powerups.delete(powerupSprite.id);
                     gameState.powerups.delete(`pos_${Math.floor(powerupSprite.x)}_${Math.floor(powerupSprite.y)}`);
-        
+
                     // Disable physics
                     if (powerupSprite.body) {
                         powerupSprite.body.enable = false;
                     }
-        
+
                     // Remove colliders
                     if (scene.physics?.world) {
                         scene.physics.world.colliders.getActive()
-                            .filter(collider => 
-                                collider.object1 === powerupSprite || 
+                            .filter(collider =>
+                                collider.object1 === powerupSprite ||
                                 collider.object2 === powerupSprite
                             ).forEach(collider => {
                                 collider.destroy();
                             });
 
                     }
-        
+
                     // Destroy the sprite
                     powerupSprite.destroy(true);
                     console.log('✓ Powerup cleanup successful');
@@ -339,9 +339,9 @@ const Socket = (function () {
                     console.error('Error during powerup cleanup:', error);
                 }
             });
-        
+
             if (powerupsToClean.length === 0) {
-                console.log('No powerups found to clean up at location:', {x: data.x, y: data.y});
+                console.log('No powerups found to clean up at location:', { x: data.x, y: data.y });
             }
             console.groupEnd();
 
@@ -529,16 +529,16 @@ const Socket = (function () {
                 // Update game record for loss
                 GameRecord.update(false);
             }
-            
+
             $('#gameContainer').hide();
             // Show end game screen
             $('#game-over-page').fadeIn(1000);
-            
+
             // Clear stats update interval
             if (gameState.statsInterval) {
                 clearInterval(gameState.statsInterval);
             }
-            
+
             // Final stats update
             const gameStats = {
                 damageDealt: gameState.stats.damageDealt || 0,
@@ -549,7 +549,7 @@ const Socket = (function () {
             $('#damage-dealt').text(gameStats.damageDealt);
             $('#powerups-collected').text(gameStats.powerupsCollected);
             $('#survival-time').text(gameStats.survivalTime + 's');
-            
+
             // Destroy the Phaser game instance
             if (window.game) {
                 window.game.destroy(true);
@@ -611,6 +611,58 @@ const Socket = (function () {
                     // Set death state
                     otherPlayer.isDead = true;
 
+                }
+            }
+        });
+
+        // Add these inside your Socket connection setup
+        socket.on('player_bow_charging', (daata) => {
+            if (data.playerId === socket.id) return;
+
+            // Get the current game scene
+            const currentScene = window.game?.scene?.scenes[0];
+            if (!currentScene) return;
+
+            const otherPlayer = PlayerManager.players.get(data.playerId);
+            if (otherPlayer) {
+                // Show charging animation for other player
+                const chargeBar = currentScene.add.rectangle(
+                    otherPlayer.x,
+                    otherPlayer.y - 40,
+                    0,
+                    5,
+                    0xff0000
+                ).setDepth(5);
+
+                // Store reference to destroy later
+                otherPlayer.chargeBar = chargeBar;
+            }
+        });
+
+        socket.on('arrow_spawned', (data) => {
+            if (window.game && window.game.scene.scenes[0]) {
+                const scene = window.game.scene.scenes[0];
+                ArrowManager.createArrow(scene, data);
+            }
+        });
+
+        socket.on('arrow_hit', (data) => {
+            // Handle arrow hit effects
+            if (window.game && window.game.scene.scenes[0]) {
+                const scene = window.game.scene.scenes[0];
+
+                // Show hit effect
+                showDamageNumber(scene, data.position.x, data.position.y, data.damage);
+
+                // Remove arrow
+                ArrowManager.removeArrow(data.arrowId);
+
+                // Apply damage to hit player if it exists
+                if (data.targetId) {
+                    const hitPlayer = PlayerManager.players.get(data.targetId);
+                    if (hitPlayer) {
+                        handlePlayerDamage(hitPlayer, data.damage);
+                    }
                 }
             }
         });

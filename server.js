@@ -80,7 +80,7 @@ const SPAWN_CONFIG = {
 function spawnWeapon(roomId, io) {
     const weaponType =
         SPAWN_CONFIG.WEAPONS.types[
-            Math.floor(Math.random() * SPAWN_CONFIG.WEAPONS.types.length)
+        Math.floor(Math.random() * SPAWN_CONFIG.WEAPONS.types.length)
         ]
     const weaponData = {
         roomId,
@@ -95,15 +95,15 @@ function spawnWeapon(roomId, io) {
                 weaponType === "DAGGER"
                     ? 200
                     : weaponType === "SWORD"
-                    ? 400
-                    : 500,
+                        ? 400
+                        : 500,
             // Attack range (pixels): Dagger=30 (shortest), Sword=50, Bow=600 (longest)
             range:
                 weaponType === "DAGGER"
                     ? 30
                     : weaponType === "SWORD"
-                    ? 50
-                    : 600,
+                        ? 50
+                        : 600,
             // Only daggers can be thrown as projectiles
             isThrowable: weaponType === "DAGGER",
         },
@@ -141,7 +141,7 @@ function startItemSpawning(roomId, io, game) {
 
         const powerupType =
             SPAWN_CONFIG.POWERUPS.types[
-                Math.floor(Math.random() * SPAWN_CONFIG.POWERUPS.types.length)
+            Math.floor(Math.random() * SPAWN_CONFIG.POWERUPS.types.length)
             ]
         const powerupConfig = SPAWN_CONFIG.POWERUPS.configs[powerupType]
         const powerupData = {
@@ -154,8 +154,8 @@ function startItemSpawning(roomId, io, game) {
                     powerupType === "HEALTH"
                         ? 0xff0000
                         : powerupType === "ATTACK"
-                        ? 0xff6b00
-                        : 0x00ff00,
+                            ? 0xff6b00
+                            : 0x00ff00,
             },
             // Random spawn position within game bounds
             x: Math.floor(Math.random() * (750 - 50) + 50),
@@ -175,6 +175,47 @@ function startItemSpawning(roomId, io, game) {
         weapon: weaponTimer,
         powerup: powerupTimer,
     }
+}
+
+// Add these constants at the top of your file
+const PHYSICS_CONFIG = {
+    MAX_SPEED: 1200,
+    MIN_SPEED: 100,
+    MAX_DAMAGE: 50,
+    MIN_DAMAGE: 10,
+    MAX_DISTANCE: 1000
+};
+
+function validateArrowPhysics(data) {
+    // Validate speed
+    const speed = Math.sqrt(
+        Math.pow(Math.cos(data.angle) * data.power * 800, 2) +
+        Math.pow(Math.sin(data.angle) * data.power * 800, 2)
+    );
+
+    if (speed > PHYSICS_CONFIG.MAX_SPEED || speed < PHYSICS_CONFIG.MIN_SPEED) {
+        console.warn('Invalid arrow speed detected:', speed);
+        return false;
+    }
+
+    return true;
+}
+
+function validateHit(hitData, initialPosition, currentPosition) {
+    const timeElapsed = Date.now() - hitData.timestamp;
+    const maxDistance = PHYSICS_CONFIG.MAX_SPEED * (timeElapsed / 1000);
+
+    const actualDistance = Math.sqrt(
+        Math.pow(currentPosition.x - initialPosition.x, 2) +
+        Math.pow(currentPosition.y - initialPosition.y, 2)
+    );
+
+    if (actualDistance > maxDistance) {
+        console.warn('Invalid arrow trajectory detected');
+        return false;
+    }
+
+    return true;
 }
 
 // Socket.IO connection handling
@@ -673,6 +714,59 @@ io.on("connection", (socket) => {
             })
         }
     })
+
+    socket.on('bow_charge_start', (data) => {
+        const game = activeGames.get(data.roomId);
+        if (game) {
+            // Broadcast charging state to other players
+            socket.to(data.roomId).emit('player_bow_charging', {
+                playerId: data.playerId,
+                position: data.position
+            });
+        }
+    });
+
+    socket.on('bow_charge_release', (data) => {
+        const game = activeGames.get(data.roomId);
+        if (game && validateArrowPhysics(data)) {
+            const arrowId = `arrow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            // Store initial arrow data for validation
+            game.arrows = game.arrows || new Map();
+            game.arrows.set(arrowId, {
+                initialPosition: data.position,
+                timestamp: Date.now(),
+                power: data.power,
+                angle: data.angle
+            });
+
+            io.to(data.roomId).emit('arrow_spawned', {
+                ...data,
+                arrowId: arrowId
+            });
+        }
+    });
+
+    socket.on('bow_arrow_hit', (data) => {
+        const game = activeGames.get(data.roomId);
+        if (game) {
+            const arrowData = game.arrows.get(data.arrowId);
+            if (arrowData && validateHit(arrowData, arrowData.initialPosition, data.position)) {
+                // Validate and potentially adjust damage
+                const validatedDamage = Math.min(
+                    Math.max(data.damage, PHYSICS_CONFIG.MIN_DAMAGE),
+                    PHYSICS_CONFIG.MAX_DAMAGE
+                );
+
+                io.to(data.roomId).emit('arrow_hit', {
+                    ...data,
+                    damage: validatedDamage
+                });
+            }
+            // Clean up arrow data
+            game.arrows.delete(data.arrowId);
+        }
+    });
 })
 
 // This helper function checks whether the text only contains word characters
