@@ -171,6 +171,8 @@ const Socket = (function () {
         });
 
         // Add this after the weapon_spawned handler
+        
+        // Add this after the weapon_spawned handler
         socket.on('weapon_collected', (data) => {
             const weapon = gameState.weapons.get(data.weaponId);
             if (weapon) {
@@ -179,16 +181,42 @@ const Socket = (function () {
                 if (playerSprite) {
                     // Stop any current animations
                     playerSprite.anims.stop();
-
+        
                     // Update the prop
                     PlayerManager.updatePlayerProp(playerSprite, data.weaponName);
-
+        
                     // Set idle texture
                     playerSprite.setTexture(
                         `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`
                     );
+        
+                    // Show feedback text for all players
+                    const scene = window.game?.scene?.scenes[0];
+                    if (scene) {
+                        const message = data.playerId === socket.id ? 
+                            `Picked up ${data.weaponName.toUpperCase()}!` :
+                            `Player ${playerSprite.number} got ${data.weaponName.toUpperCase()}!`;
+        
+                        const feedbackText = scene.add
+                            .text(playerSprite.x, playerSprite.y - 80, message, {
+                                fontSize: "16px",
+                                fill: "#fff",
+                                style: {
+                                    weight: "bold",
+                                }
+                            })
+                            .setOrigin(0.5);
+        
+                        scene.tweens.add({
+                            targets: feedbackText,
+                            y: feedbackText.y - 30,
+                            alpha: 0,
+                            duration: 2000,
+                            onComplete: () => feedbackText.destroy(),
+                        });
+                    }
                 }
-
+        
                 // Remove weapon from game state and destroy sprite
                 gameState.weapons.delete(data.weaponId);
                 weapon.destroy();
@@ -410,9 +438,9 @@ const Socket = (function () {
                 const otherPlayer = PlayerManager.players.get(moveData.id);
                 if (otherPlayer) {
                     // If player is attacking, ignore movement updates completely
-                    // if (otherPlayer.isAttacking || otherPlayer.attackCooldown) {
-                    //     return;
-                    // }
+                    if (otherPlayer.isAttacking || otherPlayer.attackCooldown) {
+                        return;
+                    }
 
                     // Update player position and velocity
                     otherPlayer.setPosition(moveData.x, moveData.y);
