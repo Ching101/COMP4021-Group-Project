@@ -142,6 +142,7 @@ const Socket = (function () {
         // Update the weapon_spawned handler to use .call() like powerups
         socket.on('weapon_spawned', (weaponData) => {
             if (weaponData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
+                console.log('Spawning weapon from socket:', weaponData);
                 spawnWeapon.call(
                     window.game.scene.scenes[0],
                     weaponData.x,

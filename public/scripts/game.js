@@ -196,12 +196,12 @@ const PlayerManager = {
             }
 
             // Stop any movement if this is the local player
-            if (playerSprite === player) {
-                playerSprite.setVelocityX(0)
-            }
+            // if (playerSprite === player) {
+            //     playerSprite.setVelocityX(0)
+            // }
 
             // Store the previous animation state to restore later if needed
-            const previousAnim = playerSprite.currentAnim
+            // const previousAnim = playerSprite.currentAnim
 
             // Clear any existing animation timer
             if (playerSprite.animationTimer) {
@@ -282,17 +282,23 @@ const PlayerManager = {
                     isAnimationActive = false
                     playerSprite.isAttacking = false
 
-                    // Return to idle state
+                    // Check movement state immediately after attack ends
+            if (playerSprite === player) {
+                // For local player, check actual keyboard state
+                if (cursors.left.isDown || cursors.right.isDown) {
+                    const runAnim = `Player${playerSprite.number}_${playerSprite.direction}_Run_${playerSprite.currentProp}`
+                    playerSprite.currentAnim = runAnim
+                    playerSprite.playAnimation(runAnim, true) // Force restart the animation
+                } else {
                     const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`
                     playerSprite.setTexture(idleTexture)
+                        playerSprite.currentAnim = null
+                }
+            }
 
                     // Handle cooldown
                     scene.time.delayedCall(weaponConfig.attackSpeed, () => {
-                        playerSprite.attackCooldown = false // Remove cooldown after delay
-                        // Restore previous animation if it exists
-                        if (previousAnim) {
-                            playerSprite.currentAnim = previousAnim
-                        }
+                        playerSprite.attackCooldown = false
                         console.log("Attack cooldown complete")
                     })
                 }
@@ -650,18 +656,18 @@ function create() {
             this.handlePlayerMovement(moveData)
         )
 
-        socket.on("weapon_spawned", (weaponData) => {
-            //console.log('Received weapon spawn:', weaponData);
-            if (weaponData.roomId === gameState.roomId) {
-                spawnWeapon.call(
-                    this,
-                    weaponData.x,
-                    weaponData.y,
-                    weaponData.weaponConfig,
-                    weaponData.id
-                )
-            }
-        })
+        // socket.on("weapon_spawned", (weaponData) => {
+        //     //console.log('Received weapon spawn:', weaponData);
+        //     if (weaponData.roomId === gameState.roomId) {
+        //         spawnWeapon.call(
+        //             this,
+        //             weaponData.x,
+        //             weaponData.y,
+        //             weaponData.weaponConfig,
+        //             weaponData.id
+        //         )
+        //     }
+        // })
 
         socket.on("weapon_collected", (data) => {
             const weapon = gameState.weapons.get(data.weaponId)
@@ -671,18 +677,18 @@ function create() {
             }
         })
 
-        socket.on("powerup_spawned", (powerupData) => {
-            //console.log('Received powerup spawn:', powerupData);
-            if (powerupData.roomId === gameState.roomId) {
-                spawnPowerup.call(
-                    this,
-                    powerupData.x,
-                    powerupData.y,
-                    powerupData.powerupConfig,
-                    powerupData.id
-                )
-            }
-        })
+        // socket.on("powerup_spawned", (powerupData) => {
+        //     //console.log('Received powerup spawn:', powerupData);
+        //     if (powerupData.roomId === gameState.roomId) {
+        //         spawnPowerup.call(
+        //             this,
+        //             powerupData.x,
+        //             powerupData.y,
+        //             powerupData.powerupConfig,
+        //             powerupData.id
+        //         )
+        //     }
+        // })
 
         socket.on("powerup_collected", (data) => {
             // Skip if this is our own collection
@@ -828,48 +834,48 @@ function setupPlayerControls(playerSprite) {
             let isMoving = false
 
             // Don't allow any movement or animation changes during attack
-            if (playerSprite.isAttacking || playerSprite.attackCooldown) {
-                playerSprite.setVelocityX(0)
+            // if (playerSprite.isAttacking || playerSprite.attackCooldown) {
+            //     playerSprite.setVelocityX(0)
 
-                // Important: Emit stopped movement to other players
-                const socket = Socket.getSocket()
-                if (socket) {
-                    socket.emit("player_movement", {
-                        roomId: gameState.roomId,
-                        id: socket.id,
-                        x: playerSprite.x,
-                        y: playerSprite.y,
-                        velocityX: 0,
-                        velocityY: playerSprite.body.velocity.y, // Keep vertical velocity for jumping
-                        direction: playerSprite.direction,
-                        animation: null,
-                        currentProp: playerSprite.currentProp,
-                        isMoving: false,
-                        isAttacking: true, // Add this flag
-                    })
-                }
-                return
-            }
+            //     // Important: Emit stopped movement to other players
+            //     const socket = Socket.getSocket()
+            //     if (socket) {
+            //         socket.emit("player_movement", {
+            //             roomId: gameState.roomId,
+            //             id: socket.id,
+            //             x: playerSprite.x,
+            //             y: playerSprite.y,
+            //             velocityX: 0,
+            //             velocityY: playerSprite.body.velocity.y, // Keep vertical velocity for jumping
+            //             direction: playerSprite.direction,
+            //             animation: null,
+            //             currentProp: playerSprite.currentProp,
+            //             isMoving: false,
+            //             isAttacking: true, // Add this flag
+            //         })
+            //     }
+            //     return
+            // }
 
             // Handle horizontal movement
             if (cursors.left.isDown && !cursors.right.isDown) {
                 // Only set velocity if not attacking
-                if (!playerSprite.isAttacking) {
+                //if (!playerSprite.isAttacking) {
                     playerSprite.setVelocityX(-160 * playerSprite.speedMultiplier);
                     currentAnimation = `Player${playerSprite.number}_left_Run_${playerSprite.currentProp}`;
                     playerSprite.direction = 'left';
                     isMoving = true;
                     playerSprite.playAnimation(currentAnimation);
-                }
+                //}
             } else if (cursors.right.isDown && !cursors.left.isDown) {
                 // Only set velocity if not attacking
-                if (!playerSprite.isAttacking) {
+                //if (!playerSprite.isAttacking) {
                     playerSprite.setVelocityX(160 * playerSprite.speedMultiplier);
                     currentAnimation = `Player${playerSprite.number}_right_Run_${playerSprite.currentProp}`;
                     playerSprite.direction = 'right';
                     isMoving = true;
                     playerSprite.playAnimation(currentAnimation);
-                }
+                //}
             } else {
                 playerSprite.setVelocityX(0)
             }
@@ -877,8 +883,7 @@ function setupPlayerControls(playerSprite) {
             // Handle jumping - also prevent during attack
             if (
                 cursors.up.isDown &&
-                playerSprite.body.touching.down &&
-                !playerSprite.isAttacking
+                playerSprite.body.touching.down //&& !playerSprite.isAttacking
             ) {
                 playerSprite.setVelocityY(-500)
                 currentAnimation = `Player${playerSprite.number}_${playerSprite.direction}_Jump_${playerSprite.currentProp}`
@@ -899,7 +904,7 @@ function setupPlayerControls(playerSprite) {
 
             // Only emit movement if not attacking
             const socket = Socket.getSocket()
-            if (socket && !playerSprite.isAttacking) {
+            if (socket ) { //&& !playerSprite.isAttacking
                 socket.emit("player_movement", {
                     roomId: gameState.roomId,
                     id: socket.id,
@@ -1910,9 +1915,9 @@ function updateActivePowerupsDisplay(scene, powerupConfig) {
     }
 
     const updateDisplay = () => {
-        const baseX = 10
-        const baseY = 60
-        const spacing = 40
+        const baseX = 25
+        const baseY = 25
+        const spacing = 80
         const index = powerupName === "attack" ? 0 : 1
         const x = baseX + spacing * index
 
@@ -1923,19 +1928,19 @@ function updateActivePowerupsDisplay(scene, powerupConfig) {
 
         // Create icon background (semi-transparent black circle)
         scene.add
-            .circle(x + 20, baseY + 20, 15, 0x000000, 0.3)
+            .circle(x + 20, baseY + 20, 30, 0x000000, 0.3)
             .setDepth(99)
             .setScrollFactor(0)
 
         // Create powerup sprite
         powerupInfo.displaySprite = scene.add
             .sprite(x + 20, baseY + 20, `powerup_${powerupName}`)
-            .setScale(0.5)
+            .setScale(0.8)
             .setDepth(100)
             .setScrollFactor(0)
 
         // Always show count text (even for count = 1)
-        powerupInfo.countText = scene.add.text(x + 30, baseY + 5, `x${powerupInfo.count}`, {
+        powerupInfo.countText = scene.add.text(x + 35, baseY , `x${powerupInfo.count}`, {
             fontSize: '14px',
             fill: '#fff',
             stroke: '#000',
@@ -1947,9 +1952,9 @@ function updateActivePowerupsDisplay(scene, powerupConfig) {
         // Show duration
         if (powerupInfo.duration) {
             const remainingSeconds = Math.ceil(powerupInfo.duration / 1000);
-            powerupInfo.durationText = scene.add.text(x + 20, baseY + 35,
+            powerupInfo.durationText = scene.add.text(x + 20, baseY + 45,
                 `${remainingSeconds}s`, {
-                fontSize: '12px',
+                fontSize: '14px',
                 fill: '#fff',
                 stroke: '#000',
                 strokeThickness: 2
@@ -2003,13 +2008,7 @@ const createCheatMenu = function () {
             <h3>Developer Tools</h3>
             <div class="cheat-options">
                 <label>
-                    <input type="checkbox" id="godMode"> God Mode
-                </label>
-                <label>
                     <input type="checkbox" id="speedBoost"> Speed Boost
-                </label>
-                <label>
-                    <input type="checkbox" id="fullHeal"> Full Heal
                 </label>
                 <label>
                     <input type="checkbox" id="powerUp"> Power Up (2x damage)
@@ -2019,12 +2018,6 @@ const createCheatMenu = function () {
     `
     document.body.appendChild(menu)
 
-    // Add event listeners for checkboxes
-    document.getElementById("godMode").addEventListener("change", (e) => {
-        activeEffects.godMode = e.target.checked
-        if (e.target.checked) setHealth(1000)
-        else setHealth(originalHealth)
-    })
 
     document.getElementById("speedBoost").addEventListener("change", (e) => {
         activeEffects.speedBoost = e.target.checked
@@ -2205,7 +2198,7 @@ const CheatMode = (function () {
     let originalSpeed = 1
     let originalHealth = 100
     let activeEffects = {
-        godMode: false,
+        fullHeal: false,
         speedBoost: false,
         powerUp: false,
     }
@@ -2218,9 +2211,6 @@ const CheatMode = (function () {
             <div class="cheat-menu-content">
                 <h3>Developer Tools</h3>
                 <div class="cheat-options">
-                    <label>
-                        <input type="checkbox" id="godMode"> God Mode
-                    </label>
                     <label>
                         <input type="checkbox" id="speedBoost"> Speed Boost
                     </label>
@@ -2236,9 +2226,9 @@ const CheatMode = (function () {
         document.body.appendChild(menu)
 
         // Add event listeners for checkboxes
-        document.getElementById("godMode").addEventListener("change", (e) => {
-            activeEffects.godMode = e.target.checked
-            if (e.target.checked) setHealth(1000)
+        document.getElementById("fullHeal").addEventListener("change", (e) => {
+            activeEffects.fullHeal = e.target.checked
+            if (e.target.checked) setHealth(100)
             else setHealth(originalHealth)
         })
 
@@ -2285,19 +2275,24 @@ const CheatMode = (function () {
     }
 
     // Helper functions to be connected with game mechanics
+    // const playerSprite = PlayerManager.players.get(moveData.id)
     const setHealth = function (value) {
         // To be implemented when connecting with game health system
+        // console.log("playerSprite", playerSprite)
         console.log("Health set to:", value)
+        player.health = value
     }
 
     const setSpeed = function (multiplier) {
         // To be implemented when connecting with game movement system
         console.log("Speed multiplier set to:", multiplier)
+        player.speedMultiplier = multiplier
     }
 
     const setDamageMultiplier = function (multiplier) {
         // To be implemented when connecting with game damage system
         console.log("Damage multiplier set to:", multiplier)
+        player.attackMultiplier = multiplier
     }
 
     // Initialize cheat mode key listener
