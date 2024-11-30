@@ -2459,22 +2459,12 @@ const CheatMode = (function () {
                         <input type="checkbox" id="speedBoost"> Speed Boost
                     </label>
                     <label>
-                        <input type="checkbox" id="fullHeal"> Full Heal
-                    </label>
-                    <label>
                         <input type="checkbox" id="powerUp"> Power Up (2x damage)
                     </label>
                 </div>
             </div>
         `
         document.body.appendChild(menu)
-
-        // Add event listeners for checkboxes
-        document.getElementById("fullHeal").addEventListener("change", (e) => {
-            activeEffects.fullHeal = e.target.checked
-            if (e.target.checked) setHealth(100)
-            else setHealth(originalHealth)
-        })
 
         document
             .getElementById("speedBoost")

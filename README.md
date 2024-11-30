@@ -73,7 +73,5 @@ Random power-up spawns enhance gameplay:
 
 Press `~` to access the developer panel with features:
 
-- God Mode
 - Speed Boost
-- Full Heal
 - Power Up (2x damage)
