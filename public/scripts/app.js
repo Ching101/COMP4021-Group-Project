@@ -58,7 +58,14 @@ $(document).ready(function() {
         $('#powerups-collected').text('0');
         $('#survival-time').text('0s');
         
-        // Reset any other game states or variables here
+        // Reset game state stats
+        if (gameState.stats) {
+            gameState.stats = {
+                damageDealt: 0,
+                powerupsCollected: 0,
+                startTime: null
+            };
+        }
     }
 
     // Start auto-refreshing stats when in lobby
