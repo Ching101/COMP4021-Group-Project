@@ -137,19 +137,22 @@ const UserPanel = (function () {
     // This function updates the user panel
     const update = function (user) {
         if (user) {
-            const wins = user.gameRecord?.wins || 0
-            const losses = user.gameRecord?.losses || 0
-            const totalGames = wins + losses
-            const winRate =
-                totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0
+            const wins = user.gameRecord?.wins || 0;
+            const losses = user.gameRecord?.losses || 0;
+            const totalGames = wins + losses;
+            const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
 
-            $("#user-panel .user-name").text(user.username)
-            $("#total-games").text(totalGames)
-            $("#win-rate").text(winRate + "%")
+            $("#user-panel .user-name").text(user.username);
+            $("#total-games").text(totalGames);
+            $("#win-rate").text(winRate + "%");
+            $("#wins").text(wins);
+            $("#losses").text(losses);
         } else {
-            $("#user-panel .user-name").text("")
-            $("#total-games").text("0")
-            $("#win-rate").text("0%")
+            $("#user-panel .user-name").text("");
+            $("#total-games").text("0");
+            $("#win-rate").text("0%");
+            $("#wins").text("0");
+            $("#losses").text("0");
         }
     }
 
