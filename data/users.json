@@ -38,5 +38,21 @@
       "wins": 1,
       "losses": 1
     }
+  },
+  "hi": {
+    "username": "hi",
+    "password": "$2b$10$kuXbDjFr4V45cHauA0NcEu4GTVSzBu3CaR5Xyebeb2c5RvxrySXLe",
+    "gameRecord": {
+      "wins": 3,
+      "losses": 20
+    }
+  },
+  "bye": {
+    "username": "bye",
+    "password": "$2b$10$rWHfuvJ258wutABJCHkEaeZwDasVkjefisyNBHT6XVMYkxnLc8lgu",
+    "gameRecord": {
+      "wins": 2,
+      "losses": 35
+    }
   }
 }

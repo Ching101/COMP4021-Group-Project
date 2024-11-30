@@ -126,6 +126,16 @@ const Socket = (function () {
             // Stop refreshing when game starts
             GameStats.stopAutoRefresh();
             console.timeEnd('gameLoadingTime'); // End timing
+
+            // Initialize game stats
+            gameState.stats = {
+                damageDealt: 0,
+                powerupsCollected: 0,
+                startTime: Date.now()
+            };
+            
+            // Start periodic stats update
+            gameState.statsInterval = setInterval(updateGameStats, 1000);
         });
 
 
@@ -491,19 +501,27 @@ const Socket = (function () {
                 // Update game record for loss
                 GameRecord.update(false);
             }
+            
             $('#gameContainer').hide();
             // Show end game screen
             $('#game-over-page').fadeIn(1000);
+            
+            // Clear stats update interval
+            if (gameState.statsInterval) {
+                clearInterval(gameState.statsInterval);
+            }
+            
+            // Final stats update
             const gameStats = {
-                damageDealt: gameState.damageDealt || 0,
-                powerupsCollected: gameState.powerupsCollected || 0,
-                survivalTime: Math.floor((Date.now() - gameState.startTime) / 1000)
+                damageDealt: gameState.stats.damageDealt || 0,
+                powerupsCollected: gameState.stats.powerupsCollected || 0,
+                survivalTime: Math.floor((Date.now() - gameState.stats.startTime) / 1000)
             };
 
             $('#damage-dealt').text(gameStats.damageDealt);
             $('#powerups-collected').text(gameStats.powerupsCollected);
             $('#survival-time').text(gameStats.survivalTime + 's');
-
+            
             // Destroy the Phaser game instance
             if (window.game) {
                 window.game.destroy(true);
@@ -516,8 +534,9 @@ const Socket = (function () {
             gameState.powerups.clear();
             gameState.roomId = null;  // Clear room ID
 
-            // Resume stats auto-refresh
+            // Resume stats auto-refresh and force immediate refresh
             GameStats.startAutoRefresh();
+            GameStats.refreshStats(); // Force immediate refresh
         });
 
         // Add this inside the Socket IIFE connect function
