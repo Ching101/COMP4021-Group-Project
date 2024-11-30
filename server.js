@@ -117,7 +117,9 @@ function spawnWeapon(roomId, io) {
 
 function startItemSpawning(roomId, io, game) {
     // Initial spawns
-    spawnWeapon(roomId, io)
+    setTimeout(() => {
+        spawnWeapon(roomId, io);
+    }, 1000);
 
     // Set up intervals
     const weaponTimer = setInterval(() => {

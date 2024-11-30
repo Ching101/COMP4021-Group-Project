@@ -28,7 +28,7 @@
     "password": "$2b$10$fByfOO09Bisvb0nCT7rBNe8hEJ4ccfvo8/WFqLw6qCTlC.0yXRZRW",
     "gameRecord": {
       "wins": 1,
-      "losses": 1
+      "losses": 2
     }
   },
   "venus": {
@@ -36,7 +36,7 @@
     "password": "$2b$10$jPy/CDsRjtKMkB3M1EvnYu54Oni90IxFjN9TTbdF8DpWMyueTlPoa",
     "gameRecord": {
       "wins": 1,
-      "losses": 1
+      "losses": 2
     }
   },
   "hi": {
