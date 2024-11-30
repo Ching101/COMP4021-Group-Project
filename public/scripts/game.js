@@ -920,8 +920,6 @@ function setupPlayerControls(playerSprite) {
         loop: true,
     })
 
-    // Create health bar
-    createHealthBar.call(this)
 
     // Setup mouse input for attacks
     this.input.on(
@@ -966,53 +964,6 @@ function handlePlayerUpdate(moveData) {
     }
 }
 
-function createHealthBar() {
-    // Create container for health bar elements
-    const barWidth = 200
-    const barHeight = 20
-    const padding = 2 // Border padding
-
-    // Create text label
-    const healthText = this.add.text(10, 5, "Your Health", {
-        fontSize: "16px",
-        fill: "#fff",
-        fontWeight: "bold",
-    })
-
-    // Create border (background)
-    healthBar = this.add.graphics()
-    healthBar.lineStyle(2, 0x000000) // White border
-    healthBar.fillStyle(0x000000, 1) // Black background
-    healthBar.strokeRoundedRect(
-        10,
-        25,
-        barWidth + padding * 2,
-        barHeight + padding * 2,
-        5
-    ) // Rounded corners
-    healthBar.fillRoundedRect(
-        10,
-        25,
-        barWidth + padding * 2,
-        barHeight + padding * 2,
-        5
-    )
-
-    // Create health bar (foreground)
-    healthBar.fillStyle(0xff0000, 1) // Red health bar
-    healthBar.fillRoundedRect(
-        10 + padding,
-        25 + padding,
-        barWidth,
-        barHeight,
-        4
-    ) // Slightly smaller radius for inner bar
-
-    // Store initial dimensions for updates
-    healthBar.barWidth = barWidth
-    healthBar.barHeight = barHeight
-    healthBar.padding = padding
-}
 
 function updateHealthBar() {
     if (!healthBar || !player) {
