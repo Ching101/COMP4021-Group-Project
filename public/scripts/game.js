@@ -2011,9 +2011,6 @@ const createCheatMenu = function () {
                     <input type="checkbox" id="speedBoost"> Speed Boost
                 </label>
                 <label>
-                    <input type="checkbox" id="fullHeal"> Full Heal
-                </label>
-                <label>
                     <input type="checkbox" id="powerUp"> Power Up (2x damage)
                 </label>
             </div>
