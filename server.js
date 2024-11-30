@@ -244,7 +244,7 @@ io.on("connection", (socket) => {
                     if (playerSocket) {
                         playerSocket.join(roomId);
                         console.log(`Player ${player.username} joined room ${roomId}`);
-                }
+                    }
                 });
 
                 startItemSpawning(roomId, io, game);
@@ -273,7 +273,7 @@ io.on("connection", (socket) => {
                             y: Math.floor(Math.random() * (500 - 50) + 50),
                             id: Date.now()
                         };
-                        
+
                         // Emit to all clients in the room
                         io.to(roomId).emit('weapon_spawned', weaponData);
                     }
@@ -294,9 +294,9 @@ io.on("connection", (socket) => {
                             },
                             x: Math.floor(Math.random() * (750 - 50) + 50),
                             y: 100, // Start higher up to let gravity work
-                            id: `powerup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // More unique ID
+                            id: `powerup_${Date.now()}_${Math.random().toString(36).slice(2, 11)}` // More unique ID using slice instead of substr
                         };
-                        
+
                         console.log('Spawning powerup:', powerupData);
                         io.to(roomId).emit('powerup_spawned', powerupData);
                     }
@@ -388,13 +388,13 @@ io.on("connection", (socket) => {
             console.error('Invalid movement data:', moveData);
             return;
         }
-    
+
         const game = activeGames.get(moveData.roomId);
         if (!game) {
             console.error('Game not found for room:', moveData.roomId);
             return;
         }
-    
+
         // Broadcast movement to all other players in the room
         socket.to(moveData.roomId).emit('player_movement', {
             id: moveData.id,
@@ -420,7 +420,7 @@ io.on("connection", (socket) => {
     socket.on('weapon_collected', (data) => {
         io.to(data.roomId).emit('weapon_collected', data);
     });
-    
+
     socket.on('powerup_collected', (data) => {
         io.to(data.roomId).emit('powerup_collected', data);
     });
@@ -626,7 +626,7 @@ app.get('/reloadStats', (req, res) => {
         }
 
         // Send back user stats
-        res.json({ 
+        res.json({
             user: {
                 username: username,
                 gameRecord: users[username].gameRecord

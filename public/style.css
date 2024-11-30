@@ -353,12 +353,18 @@ body {
 }
 
 /* Update the existing styles to include victory-icon */
-.weapon-icon, .powerup-icon, .control-icon, .victory-icon {
+.weapon-icon,
+.powerup-icon,
+.control-icon,
+.victory-icon {
     image-rendering: pixelated;
     transition: transform 0.2s;
 }
 
-.weapon-icon:hover, .powerup-icon:hover, .control-icon:hover, .victory-icon:hover {
+.weapon-icon:hover,
+.powerup-icon:hover,
+.control-icon:hover,
+.victory-icon:hover {
     transform: scale(1.1);
 }
 
@@ -968,11 +974,20 @@ button {
     text-align: center;
 }
 
-.rank-1 { color: gold; }
-.rank-2 { color: silver; }
-.rank-3 { color: #cd7f32; }
+.rank-1 {
+    color: gold;
+}
 
-.weapon-icon, .powerup-icon {
+.rank-2 {
+    color: silver;
+}
+
+.rank-3 {
+    color: #cd7f32;
+}
+
+.weapon-icon,
+.powerup-icon {
     width: 32px;
     height: 32px;
     display: block;
@@ -980,7 +995,8 @@ button {
     image-rendering: pixelated;
 }
 
-.weapons-list, .powerups-list {
+.weapons-list,
+.powerups-list {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
@@ -989,7 +1005,8 @@ button {
     margin: 20px 0;
 }
 
-.weapons-list li, .powerups-list li {
+.weapons-list li,
+.powerups-list li {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     padding: 15px;
@@ -997,12 +1014,14 @@ button {
     transition: transform 0.2s;
 }
 
-.weapons-list li:hover, .powerups-list li:hover {
+.weapons-list li:hover,
+.powerups-list li:hover {
     transform: translateY(-2px);
     background: rgba(0, 0, 0, 0.3);
 }
 
-.weapon, .powerup {
+.weapon,
+.powerup {
     font-weight: bold;
     color: var(--button-color);
     display: block;
@@ -1047,12 +1066,16 @@ button {
 }
 
 /* Adjust existing styles to match */
-.weapon-icon, .powerup-icon, .control-icon {
+.weapon-icon,
+.powerup-icon,
+.control-icon {
     image-rendering: pixelated;
     transition: transform 0.2s;
 }
 
-.weapon-icon:hover, .powerup-icon:hover, .control-icon:hover {
+.weapon-icon:hover,
+.powerup-icon:hover,
+.control-icon:hover {
     transform: scale(1.1);
 }
 
@@ -1065,12 +1088,18 @@ button {
 }
 
 /* Update the existing styles to include victory-icon */
-.weapon-icon, .powerup-icon, .control-icon, .victory-icon {
+.weapon-icon,
+.powerup-icon,
+.control-icon,
+.victory-icon {
     image-rendering: pixelated;
     transition: transform 0.2s;
 }
 
-.weapon-icon:hover, .powerup-icon:hover, .control-icon:hover, .victory-icon:hover {
+.weapon-icon:hover,
+.powerup-icon:hover,
+.control-icon:hover,
+.victory-icon:hover {
     transform: scale(1.1);
 }
 
@@ -1082,9 +1111,17 @@ button {
 }
 
 @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
 
 #cheat-menu {
@@ -1129,4 +1166,67 @@ button {
     width: 16px;
     height: 16px;
     cursor: pointer;
+}
+
+.game-timer {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 20px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 1000;
+    border: 2px solid #3498db;
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+    min-width: 120px;
+    text-align: center;
+}
+
+.game-timer.warning {
+    color: #e74c3c;
+    border-color: #e74c3c;
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: translateX(-50%) scale(1);
+    }
+
+    50% {
+        transform: translateX(-50%) scale(1.05);
+    }
+
+    100% {
+        transform: translateX(-50%) scale(1);
+    }
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -25px;
+    margin-left: -25px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

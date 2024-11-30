@@ -72,7 +72,13 @@ const Socket = (function () {
 
         // Update game start initiated handler
         socket.on('game_start_initiated', (data) => {
-            // Store room and host information
+            // Update UI to show connection progress
+            $('.start-button').text('Connecting players...');
+
+            // Add a loading indicator
+            const loadingEl = $('<div class="loading-spinner"></div>');
+            $('#gameContainer').prepend(loadingEl);
+
             window.currentRoomId = data.roomId;
             window.hostId = data.hostId;
 
@@ -84,6 +90,7 @@ const Socket = (function () {
 
         // Update game started handler
         socket.on('game_started', (gameData) => {
+
             console.log('Game started with data:', gameData);
 
             // Ensure we're in the correct room
@@ -92,7 +99,9 @@ const Socket = (function () {
                 return;
             }
 
-            // Hide lobby and show game for all players
+            // Hide lobby and show game for all players// Remove loading indicator
+            $('.loading-spinner').remove();
+
             $('.lobby-container').hide();
             $('#gameContainer').show();
 
@@ -110,137 +119,137 @@ const Socket = (function () {
         });
 
         // Update the weapon_spawned handler to use .call() like powerups
-socket.on('weapon_spawned', (weaponData) => {
-    console.log('Received weapon spawn event:', weaponData);
-    if (weaponData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
-        console.log('Spawning weapon in game');
-        spawnWeapon.call(
-            window.game.scene.scenes[0],
-            weaponData.x,
-            weaponData.y,
-            weaponData.weaponConfig,
-            weaponData.id
-        );
-    } else {
-        console.log('Skipping weapon spawn:', {
-            expectedRoom: window.currentRoomId,
-            receivedRoom: weaponData.roomId,
-            gameReady: !!window.game?.scene?.scenes[0]
-        });
-    }
-});
-
-// Add this after the weapon_spawned handler
-socket.on('weapon_collected', (data) => {
-    console.log('Weapon collected:', data);
-    const weapon = gameState.weapons.get(data.weaponId);
-    if (weapon) {
-        // Update the collecting player's prop
-        const playerSprite = PlayerManager.players.get(data.playerId);
-        if (playerSprite) {
-            // Stop any current animations
-            playerSprite.anims.stop();
-            
-            // Update the prop
-            PlayerManager.updatePlayerProp(playerSprite, data.weaponName);
-            
-            // Set idle texture
-            playerSprite.setTexture(
-                `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`
-            );
-        }
-        
-        // Remove weapon from game state and destroy sprite
-        gameState.weapons.delete(data.weaponId);
-        weapon.destroy();
-    }
-});
-
-socket.on('powerup_spawned', (powerupData) => {
-    console.log('Received powerup spawn event:', {
-        id: powerupData.id,
-        currentPowerups: Array.from(gameState.powerups.keys())
-    });
-    
-    if (powerupData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
-        console.log('Spawning powerup in game');
-        const powerupSprite = spawnPowerup.call(
-            window.game.scene.scenes[0],
-            powerupData.x,
-            powerupData.y,
-            powerupData.powerupConfig,
-            powerupData.id
-        );
-        
-        // Verify powerup was added to gameState
-        console.log('After spawn:', {
-            spawnedId: powerupData.id,
-            spriteId: powerupSprite?.id,
-            storedPowerups: Array.from(gameState.powerups.keys())
-        });
-    }
-});
-
-socket.on('powerup_collected', (data) => {
-    console.log('Powerup collected event received:', {
-        powerupId: data.powerupId,
-        existingPowerups: Array.from(gameState.powerups.keys()),
-        fullData: data
-    });
-
-    const powerup = gameState.powerups.get(data.powerupId);
-    if (powerup) {
-        // Apply powerup effect to the correct player
-        const playerSprite = PlayerManager.players.get(data.playerId);
-        if (playerSprite) {
-            console.log('Applying powerup effect:', {
-                playerId: data.playerId,
-                powerupType: data.powerupType
-            });
-
-            // Apply the powerup effect
-            applyPowerupEffect(playerSprite, data.powerupType);
-            
-            // Now we can safely destroy and remove the powerup
-            if (powerup.body) {
-                powerup.body.enable = false;
-            }
-            powerup.destroy();
-            gameState.powerups.delete(data.powerupId);
-            
-            // Show collection effect
-            if (window.game?.scene?.scenes[0]) {
-                const scene = window.game.scene.scenes[0];
-                const text = scene.add
-                    .text(playerSprite.x, playerSprite.y - 50, 
-                        `Picked up ${data.powerupType.name}!`, {
-                            fontSize: "16px",
-                            fill: "#fff",
-                        })
-                    .setOrigin(0.5);
-
-                scene.tweens.add({
-                    targets: text,
-                    y: text.y - 30,
-                    alpha: 0,
-                    duration: 1000,
-                    onComplete: () => text.destroy(),
+        socket.on('weapon_spawned', (weaponData) => {
+            console.log('Received weapon spawn event:', weaponData);
+            if (weaponData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
+                console.log('Spawning weapon in game');
+                spawnWeapon.call(
+                    window.game.scene.scenes[0],
+                    weaponData.x,
+                    weaponData.y,
+                    weaponData.weaponConfig,
+                    weaponData.id
+                );
+            } else {
+                console.log('Skipping weapon spawn:', {
+                    expectedRoom: window.currentRoomId,
+                    receivedRoom: weaponData.roomId,
+                    gameReady: !!window.game?.scene?.scenes[0]
                 });
             }
-        }
-    } else {
-        console.warn('Powerup not found:', {
-            requestedId: data.powerupId,
-            availablePowerups: Array.from(gameState.powerups.entries()).map(([id, p]) => ({
-                id,
-                type: p.type?.name,
-                position: { x: p.x, y: p.y },
-                timestamp: p.timestamp,
-                isBeingCollected: p.isBeingCollected
-            }))
         });
-    }
-});
+
+        // Add this after the weapon_spawned handler
+        socket.on('weapon_collected', (data) => {
+            console.log('Weapon collected:', data);
+            const weapon = gameState.weapons.get(data.weaponId);
+            if (weapon) {
+                // Update the collecting player's prop
+                const playerSprite = PlayerManager.players.get(data.playerId);
+                if (playerSprite) {
+                    // Stop any current animations
+                    playerSprite.anims.stop();
+
+                    // Update the prop
+                    PlayerManager.updatePlayerProp(playerSprite, data.weaponName);
+
+                    // Set idle texture
+                    playerSprite.setTexture(
+                        `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`
+                    );
+                }
+
+                // Remove weapon from game state and destroy sprite
+                gameState.weapons.delete(data.weaponId);
+                weapon.destroy();
+            }
+        });
+
+        socket.on('powerup_spawned', (powerupData) => {
+            console.log('Received powerup spawn event:', {
+                id: powerupData.id,
+                currentPowerups: Array.from(gameState.powerups.keys())
+            });
+
+            if (powerupData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
+                console.log('Spawning powerup in game');
+                const powerupSprite = spawnPowerup.call(
+                    window.game.scene.scenes[0],
+                    powerupData.x,
+                    powerupData.y,
+                    powerupData.powerupConfig,
+                    powerupData.id
+                );
+
+                // Verify powerup was added to gameState
+                console.log('After spawn:', {
+                    spawnedId: powerupData.id,
+                    spriteId: powerupSprite?.id,
+                    storedPowerups: Array.from(gameState.powerups.keys())
+                });
+            }
+        });
+
+        socket.on('powerup_collected', (data) => {
+            console.log('Powerup collected event received:', {
+                powerupId: data.powerupId,
+                existingPowerups: Array.from(gameState.powerups.keys()),
+                fullData: data
+            });
+
+            const powerup = gameState.powerups.get(data.powerupId);
+            if (powerup) {
+                // Apply powerup effect to the correct player
+                const playerSprite = PlayerManager.players.get(data.playerId);
+                if (playerSprite) {
+                    console.log('Applying powerup effect:', {
+                        playerId: data.playerId,
+                        powerupType: data.powerupType
+                    });
+
+                    // Apply the powerup effect
+                    applyPowerupEffect(playerSprite, data.powerupType);
+
+                    // Now we can safely destroy and remove the powerup
+                    if (powerup.body) {
+                        powerup.body.enable = false;
+                    }
+                    powerup.destroy();
+                    gameState.powerups.delete(data.powerupId);
+
+                    // Show collection effect
+                    if (window.game?.scene?.scenes[0]) {
+                        const scene = window.game.scene.scenes[0];
+                        const text = scene.add
+                            .text(playerSprite.x, playerSprite.y - 50,
+                                `Picked up ${data.powerupType.name}!`, {
+                                fontSize: "16px",
+                                fill: "#fff",
+                            })
+                            .setOrigin(0.5);
+
+                        scene.tweens.add({
+                            targets: text,
+                            y: text.y - 30,
+                            alpha: 0,
+                            duration: 1000,
+                            onComplete: () => text.destroy(),
+                        });
+                    }
+                }
+            } else {
+                console.warn('Powerup not found:', {
+                    requestedId: data.powerupId,
+                    availablePowerups: Array.from(gameState.powerups.entries()).map(([id, p]) => ({
+                        id,
+                        type: p.type?.name,
+                        position: { x: p.x, y: p.y },
+                        timestamp: p.timestamp,
+                        isBeingCollected: p.isBeingCollected
+                    }))
+                });
+            }
+        });
 
         socket.on('join_error', (error) => {
             console.error('Failed to join game:', error);
