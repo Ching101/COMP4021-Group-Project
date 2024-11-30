@@ -193,23 +193,17 @@
         </div>
     </div>
 
-    <div id="game-over-page" style="display: none">
+    <div id="game-over-page" style="display: none;">
         <div class="game-over-container">
-            <h1 class="game-over-title">Game Over</h1>
-
-            <div id="result-animation">
-                <h2 id="victory-text" style="display: none; color: #27ae60">
-                    VICTORY!
-                </h2>
-                <h2 id="defeat-text" style="display: none; color: #c0392b">
-                    DEFEAT!
-                </h2>
+            <div class="result-text">
+                <h1 id="victory-text" style="display: none;">VICTORY</h1>
+                <h1 id="defeat-text" style="display: none;">DEFEAT</h1>
             </div>
 
             <div class="game-stats-container">
                 <h2>Your Statistics</h2>
                 <div class="stat-row">
-                    <span>Damage Dealt:</span>
+                    <span>Damage Taken:</span>
                     <span id="damage-dealt">0</span>
                 </div>
                 <div class="stat-row">
@@ -222,15 +216,12 @@
                 </div>
             </div>
 
-
             <button id="play-again-btn" class="game-over-btn">
                 Play Again
             </button>
             <button id="return-lobby-btn-2" class="game-over-btn">
                 Return to Lobby
             </button>
-
-            <div class="game-title">Arena Warriors</div>
         </div>
     </div>
 

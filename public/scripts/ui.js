@@ -420,3 +420,32 @@ const GameLobby = (function () {
 
     return { initialize };
 })();
+
+function showGameOver(isWinner) {
+    $('#gameContainer').hide();
+    
+    // Get the music button state
+    const musicButton = document.querySelector(".music-button");
+    const isMusicActive = musicButton.classList.contains("active");
+
+    if (isMusicActive) {
+        // Stop the background music
+        window.gameSounds.background.pause();
+        window.gameSounds.background.currentTime = 0;
+
+        // Play appropriate music
+        if (isWinner) {
+            window.gameSounds.victory.play()
+                .catch(error => console.log("Audio play failed:", error));
+        } else {
+            window.gameSounds.defeat.play()
+                .catch(error => console.log("Audio play failed:", error));
+        }
+    }
+    
+    // Show appropriate text
+    $('#victory-text').toggle(isWinner);
+    $('#defeat-text').toggle(!isWinner);
+    
+    $('#game-over-page').fadeIn(500);
+}

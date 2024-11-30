@@ -1350,3 +1350,64 @@ button {
 
     
 }
+
+.result-text {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.result-text h1 {
+    font-size: 72px;  /* Made bigger for more impact */
+    margin: 0;
+    padding: 20px;
+    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+#victory-text {
+    color: #4CAF50;
+    animation: victoryAnimation 1s ease-out;
+}
+
+#defeat-text {
+    color: #f44336;
+    animation: defeatAnimation 1s ease-out;
+}
+
+/* Optional: Add a glow effect */
+#victory-text {
+    text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+#defeat-text {
+    text-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+}
+
+@keyframes victoryAnimation {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        color: #6aff72;
+    }
+    100% {
+        transform: scale(1);
+        color: #4CAF50;
+    }
+}
+
+@keyframes defeatAnimation {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        color: #ff6b6b;
+    }
+    100% {
+        transform: scale(1);
+        color: #f44336;
+    }
+}
