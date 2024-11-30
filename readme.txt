@@ -4,12 +4,13 @@ A multiplayer 2D arena battle game where 2-4 players compete in intense combat u
 
 ## Installation & Setup
 
-1. Clone the repository / Download the zip file
+1. Clone the repository 
 
 ```bash
 git clone https://github.com/Ching101/COMP4021-Group-Project.git
 cd COMP4021-Group-Project
 ```
+1. Or download the zip file
 
 2. Install dependencies
 
