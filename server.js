@@ -52,9 +52,10 @@ const SPAWN_CONFIG = {
         types: ["DAGGER", "SWORD", "BOW"]
     },
     POWERUPS: {
-        interval: 10000,  // 10 seconds
-        types: ["HEALTH", "ATTACK", "SPEED"]
-    }
+        interval: 10000,
+        types: ["HEALTH", "ATTACK", "SPEED"],
+        nextId: 1  // Add this for ID generation
+    },
 };
 
 function startItemSpawning(roomId, io, game) {
@@ -279,12 +280,6 @@ io.on("connection", (socket) => {
                 }, SPAWN_CONFIG.WEAPONS.interval);
 
                 game.spawnTimers.powerups = setInterval(() => {
-                    console.log('Powerup spawn tick:', {
-                        roomId,
-                        active: game.active,
-                        started: game.started
-                    });
-
                     if (game.active) {
                         const powerupType = SPAWN_CONFIG.POWERUPS.types[Math.floor(Math.random() * SPAWN_CONFIG.POWERUPS.types.length)];
                         const powerupData = {
@@ -298,10 +293,11 @@ io.on("connection", (socket) => {
                                 color: powerupType === "HEALTH" ? 0xff0000 : powerupType === "ATTACK" ? 0xff6b00 : 0x00ff00
                             },
                             x: Math.floor(Math.random() * (750 - 50) + 50),
-                            y: Math.floor(Math.random() * (500 - 50) + 50),
-                            id: Date.now()
+                            y: 100, // Start higher up to let gravity work
+                            id: `powerup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // More unique ID
                         };
-                        console.log('Emitting powerup spawn:', powerupData);
+                        
+                        console.log('Spawning powerup:', powerupData);
                         io.to(roomId).emit('powerup_spawned', powerupData);
                     }
                 }, SPAWN_CONFIG.POWERUPS.interval);
@@ -388,33 +384,28 @@ io.on("connection", (socket) => {
     });
 
     socket.on('player_movement', (moveData) => {
-        // Add validation for required fields
-        console.log('Server received player movement:', moveData);
         if (!moveData.roomId || !moveData.id) {
             console.error('Invalid movement data:', moveData);
             return;
         }
-
+    
         const game = activeGames.get(moveData.roomId);
         if (!game) {
             console.error('Game not found for room:', moveData.roomId);
             return;
         }
-
-        // Log the room members
-        const roomMembers = io.sockets.adapter.rooms.get(moveData.roomId);
-        console.log('Room members:', roomMembers ? Array.from(roomMembers) : 'none');
-
+    
         // Broadcast movement to all other players in the room
-        console.log('Broadcasting movement to room:', moveData.roomId);
-        io.to(moveData.roomId).emit('player_movement', {
+        socket.to(moveData.roomId).emit('player_movement', {
             id: moveData.id,
             x: moveData.x,
             y: moveData.y,
             velocityX: moveData.velocityX,
             velocityY: moveData.velocityY,
-            flipX: moveData.flipX,
-            direction: moveData.direction
+            direction: moveData.direction,
+            animation: moveData.animation,
+            currentProp: moveData.currentProp,
+            isMoving: moveData.isMoving
         });
     });
 
