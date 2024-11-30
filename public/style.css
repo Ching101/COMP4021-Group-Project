@@ -53,6 +53,7 @@ body {
     align-items: center;
     gap: 10px;
     position: relative;
+    overflow: hidden;
 }
 
 .music-icon {
@@ -77,11 +78,12 @@ body {
     content: '';
     position: absolute;
     top: 50%;
-    left: 0;
-    width: 100%;
+    left: 50%;
+    width: 140%;
     height: 3px;
     background-color: var(--button-color);
-    transform: translateY(-50%) rotate(-45deg);
+    transform: translate(-50%, -50%) rotate(-45deg);
+    transform-origin: center;
 }
 
 /* Hover effects */
@@ -1426,4 +1428,8 @@ button {
 /* If needed, set game-over page z-index */
 #game-over-page {
     z-index: 1000;
+}
+
+.music-button {
+    clip-path: inset(0 0 0 0);
 }
