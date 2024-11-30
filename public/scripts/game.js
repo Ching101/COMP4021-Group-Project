@@ -1014,9 +1014,12 @@ function basicAttack(pointer) {
     if (!currentWeapon) {
         // Visual feedback for no weapon
         const text = this.add
-            .text(player.x, player.y - 50, "No weapon!", {
+            .text(player.x, player.y - 80, "No weapon!", {
                 fontSize: "16px",
                 fill: "#ff0000",
+                style: {
+                    weight: "bold",
+                }
             })
             .setOrigin(0.5)
 
@@ -1024,7 +1027,8 @@ function basicAttack(pointer) {
             targets: text,
             y: text.y - 30,
             alpha: 0,
-            duration: 1000,
+            duration: 2000,
+            //ease: "Power2",
             onComplete: () => text.destroy(),
         })
         return
@@ -1156,11 +1160,14 @@ function spawnWeapon(x, y, weaponConfig, id) {
         const text = this.add
             .text(
                 playerSprite.x,
-                playerSprite.y - 50,
-                `Picked up ${weaponConfig.name}!`,
+                playerSprite.y - 80,
+                `Picked up ${weaponConfig.name.toUpperCase()}!`,
                 {
                     fontSize: "16px",
                     fill: "#fff",
+                    style: {
+                        weight: "bold",
+                    }
                 }
             )
             .setOrigin(0.5)
@@ -1169,7 +1176,7 @@ function spawnWeapon(x, y, weaponConfig, id) {
             targets: text,
             y: text.y - 30,
             alpha: 0,
-            duration: 1000,
+            duration: 2000,
             onComplete: () => text.destroy(),
         })
     }
@@ -1342,16 +1349,18 @@ function cleanupPowerup(powerup, scene) {
 // Helper function to show powerup feedback
 function showPowerupFeedback(scene, player, powerupName, isCollector) {
     const message = isCollector ?
-        `Picked up ${powerupName}!` :
-        `Player ${player.number} got ${powerupName}!`;
+        `Picked up ${powerupName.toUpperCase()}!` :
+        `Player ${player.number} got ${powerupName.toUpperCase()}!`;
 
     const feedbackText = scene.add
-        .text(player.x, player.y - 50, message, {
+        .text(player.x, player.y - 80, message, {
             fontSize: "16px",
             fill: "#fff",
-            stroke: "#000",
-            strokeThickness: 3,
+            //stroke: "#000",
             align: "center",
+            style: {
+                weight: "bold",
+            }
         })
         .setOrigin(0.5)
 
@@ -1359,8 +1368,8 @@ function showPowerupFeedback(scene, player, powerupName, isCollector) {
         targets: feedbackText,
         y: feedbackText.y - 30,
         alpha: 0,
-        duration: 1500,
-        ease: "Power2",
+        duration: 2000,
+        //ease: "Power2",
         onComplete: () => feedbackText.destroy(),
     })
 }
@@ -1548,18 +1557,19 @@ function meleeAttack(damage, range) {
 function showDamageNumber(scene, x, y, damage) {
     const text = scene.add
         .text(x, y - 20, `-${damage}`, {
-            fontSize: "20px",
+            fontSize: "18px",
             fill: "#ff0000",
             fontWeight: "bold",
         })
         .setOrigin(0.5)
+        .setDepth(1000)
 
     scene.tweens.add({
         targets: text,
-        y: text.y - 50,
-        alpha: 0,
-        duration: 1000,
-        ease: "Power1",
+        y: text.y - 10,
+        alpha: 1,
+        duration: 1500,
+        //ease: "Power1",
         onComplete: () => text.destroy(),
     })
 }
@@ -1805,7 +1815,7 @@ function chargeBow(pointer) {
             targets: powerText,
             y: powerText.y - 30,
             alpha: 0,
-            duration: 500,
+            duration: 1000,
             onComplete: () => powerText.destroy(),
         })
 
