@@ -446,6 +446,21 @@ io.on("connection", (socket) => {
             console.log('Game not found for room:', frameData.roomId);
         }
     });
+
+    // Add inside the io.on("connection") handler
+    socket.on('player_attack_hit', (data) => {
+        const game = activeGames.get(data.roomId);
+        if (game) {
+            // Broadcast damage to all players in the room
+            io.to(data.roomId).emit('player_damaged', {
+                attackerId: data.attackerId,
+                targetId: data.targetId,
+                damage: data.damage,
+                x: data.x,
+                y: data.y
+            });
+        }
+    });
     // Add this helper function
 })
 
