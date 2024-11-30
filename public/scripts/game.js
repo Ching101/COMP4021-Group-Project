@@ -41,6 +41,7 @@ const PlayerManager = {
         playerSprite.health = 100;
         playerSprite.isInvulnerable = false;
         playerSprite.attackMultiplier = 1;
+        playerSprite.speedMultiplier = 1;
         playerSprite.setCollideWorldBounds(true);
 
         // Add update listener to keep name label with player
@@ -53,11 +54,11 @@ const PlayerManager = {
         // Add custom play function to the sprite
         playerSprite.playAnimation = function (animationKey, forceRestart = false) {
             // Debug logs for initial state
-            console.log('Starting animation:', {
-                animationKey,
-                currentAnim: this.currentAnim,
-                hasTimer: !!this.animationTimer
-            });
+            // console.log('Starting animation:', {
+            //     animationKey,
+            //     currentAnim: this.currentAnim,
+            //     hasTimer: !!this.animationTimer
+            // });
 
             // Don't restart the same animation unless forced
             if (!forceRestart && this.currentAnim === animationKey) {
@@ -389,6 +390,10 @@ const gameState = {
         element: null,
         remaining: 0,
         interval: null
+    },
+    activePowerups: {
+        attack: { count: 0, timer: null },
+        speed: { count: 0, timer: null }
     }
 
 };
@@ -575,7 +580,7 @@ function create() {
         );
 
         socket.on('weapon_spawned', (weaponData) => {
-            console.log('Received weapon spawn:', weaponData);
+            //console.log('Received weapon spawn:', weaponData);
             if (weaponData.roomId === gameState.roomId) {
                 spawnWeapon.call(
                     this,
@@ -596,7 +601,7 @@ function create() {
         });
 
         socket.on('powerup_spawned', (powerupData) => {
-            console.log('Received powerup spawn:', powerupData);
+            //console.log('Received powerup spawn:', powerupData);
             if (powerupData.roomId === gameState.roomId) {
                 spawnPowerup.call(
                     this,
@@ -739,7 +744,7 @@ function setupPlayerControls(playerSprite) {
             if (cursors.left.isDown && !cursors.right.isDown) {
                 // Only set velocity if not attacking
                 if (!playerSprite.isAttacking) {
-                    playerSprite.setVelocityX(-160);
+                    playerSprite.setVelocityX(-160*playerSprite.speedMultiplier);
                     currentAnimation = `Player${playerSprite.number}_left_Run_${playerSprite.currentProp}`;
                     playerSprite.direction = 'left';
                     isMoving = true;
@@ -747,7 +752,7 @@ function setupPlayerControls(playerSprite) {
             } else if (cursors.right.isDown && !cursors.left.isDown) {
                 // Only set velocity if not attacking
                 if (!playerSprite.isAttacking) {
-                    playerSprite.setVelocityX(160);
+                    playerSprite.setVelocityX(160*playerSprite.speedMultiplier);
                     currentAnimation = `Player${playerSprite.number}_right_Run_${playerSprite.currentProp}`;
                     playerSprite.direction = 'right';
                     isMoving = true;
@@ -884,8 +889,12 @@ function createHealthBar() {
 }
 
 function updateHealthBar() {
-    if (!healthBar || !player) return;
+    if (!healthBar || !player) {
+        console.log('Health bar update skipped - missing components');
+        return;
+    }
 
+    console.log('Updating health bar with health:', player.health);
     healthBar.clear();
 
     // Redraw border
@@ -896,7 +905,7 @@ function updateHealthBar() {
 
     // Redraw health bar
     healthBar.fillStyle(0xff0000, 1);
-    const currentWidth = (healthBar.barWidth * (player.health / 100));
+    const currentWidth = (healthBar.barWidth * (Math.max(0, Math.min(100, player.health)) / 100));
     healthBar.fillRoundedRect(
         10 + healthBar.padding, 
         25 + healthBar.padding, 
@@ -1035,7 +1044,7 @@ function handleOtherPlayerAttack(attackData) {
 // Move spawnWeapon outside of config
 
 function spawnWeapon(x, y, weaponConfig, id) {
-    console.log('Spawning weapon:', { x, y, weaponConfig, id });
+    //console.log('Spawning weapon:', { x, y, weaponConfig, id });
 
     // Create the weapon sprite
     const weapon = this.physics.add.sprite(x, y, weaponConfig.name)
@@ -1144,15 +1153,15 @@ function spawnPowerup(x, y, powerupConfig, id) {
     const scene = this;
     
     try {
-        console.log('Creating powerup sprite:', {
-            id,
-            type: powerupConfig.name,
-            position: { x, y }
-        });
+        //console.log('Creating powerup sprite:', {
+        //    id,
+        //    type: powerupConfig.name,
+        //    position: { x, y }
+        //});
 
         // Create the powerup sprite with physics enabled
         const powerup = scene.physics.add.sprite(x, y, `powerup_${powerupConfig.name}`)
-            .setScale(0.6)
+            .setScale(0.8)
             .setDepth(1);
 
         // Add additional identification properties
@@ -1191,22 +1200,45 @@ function collectPowerup(player, powerupSprite, scene) {
     const position = { x: powerupSprite.x, y: powerupSprite.y };
     const powerupConfig = powerupSprite.powerupConfig;
 
-    console.log('Collecting powerup:', {
-        id: powerupId,
-        position: position,
-        config: powerupConfig
-    });
-
     const socket = Socket.getSocket();
     if (socket) {
-        // Immediately cleanup the powerup
-        cleanupPowerup(powerupSprite, scene);
-
         // Apply effect immediately for collecting player
-        applyPowerupEffect(player, powerupConfig);
+        if (player === window.player) {  // Check if this is the local player
+            applyPowerupEffect(player, powerupConfig);
+            showPowerupFeedback(scene, player, powerupConfig.name, true);
+            // Update active powerups display only for non-health powerups
+            if (powerupConfig.name !== 'health') {
+                updateActivePowerupsDisplay(scene, powerupConfig.name);
+            }
+        }
 
-        // Show collection feedback for collecting player
-        showPowerupFeedback(scene, player, powerupConfig.name, true);
+        // Clean up locally first
+        try {
+            // Remove from gameState
+            gameState.powerups.delete(powerupId);
+            gameState.powerups.delete(`pos_${Math.floor(position.x)}_${Math.floor(position.y)}`);
+
+            // Disable physics
+            if (powerupSprite.body) {
+                powerupSprite.body.enable = false;
+            }
+
+            // Remove colliders
+            if (scene.physics?.world) {
+                scene.physics.world.colliders.getActive()
+                    .filter(collider => 
+                        collider.object1 === powerupSprite || 
+                        collider.object2 === powerupSprite
+                    ).forEach(collider => {
+                        collider.destroy();
+                    });
+            }
+
+            // Destroy the sprite
+            powerupSprite.destroy(true);
+        } catch (error) {
+            console.error('Error during local powerup cleanup:', error);
+        }
 
         // Emit collection event
         socket.emit('powerup_collected', {
@@ -1220,46 +1252,55 @@ function collectPowerup(player, powerupSprite, scene) {
     }
 }
 
-// Helper function to cleanup powerup
 function cleanupPowerup(powerup, scene) {
-    if (!powerup || !powerup.active) return;
-
-    // Immediately disable physics and interaction
-    if (powerup.body) {
-        powerup.body.enable = false;
+    if (!powerup || !powerup.active) {
+        console.log('Skipping cleanup - powerup inactive or null');
+        return;
     }
-    powerup.setActive(false);
-    powerup.setVisible(false);
+
+    // Get position key before cleanup
+    const positionKey = `pos_${Math.floor(powerup.x)}_${Math.floor(powerup.y)}`;
 
     // Remove from all collections
     gameState.powerups.delete(powerup.id);
-    gameState.powerups.delete(`pos_${Math.floor(powerup.x)}_${Math.floor(powerup.y)}`);
+    gameState.powerups.delete(positionKey);
 
-    // Remove any existing colliders
-    if (scene.physics.world) {
-        scene.physics.world.colliders.getActive()
-            .filter(collider => collider.object1 === powerup || collider.object2 === powerup)
-            .forEach(collider => collider.destroy());
+    // Disable physics and visibility
+    powerup.setActive(false);
+    powerup.setVisible(false);
+    
+    if (powerup.body) {
+        powerup.body.enable = false;
     }
 
-    // Destroy the sprite after a short delay to ensure clean removal
-    scene.time.delayedCall(50, () => {
-        if (powerup.destroy) {
-            powerup.destroy();
-        }
-    });
+    // Remove colliders
+    if (scene?.physics?.world) {
+        scene.physics.world.colliders.getActive()
+            .filter(collider => 
+                collider.object1 === powerup || 
+                collider.object2 === powerup
+            ).forEach(collider => {
+                collider.destroy();
+            });
+    }
+
+    // Destroy the sprite
+    powerup.destroy();
 }
 
 // Helper function to show powerup feedback
 function showPowerupFeedback(scene, player, powerupName, isCollector) {
     const message = isCollector ? 
         `Picked up ${powerupName}!` : 
-        `${player.number} got ${powerupName}!`;
+        `Player ${player.number} got ${powerupName}!`;
 
     const feedbackText = scene.add
         .text(player.x, player.y - 50, message, {
             fontSize: "16px",
             fill: "#fff",
+            stroke: "#000",
+            strokeThickness: 3,
+            align: 'center'
         })
         .setOrigin(0.5);
 
@@ -1267,35 +1308,69 @@ function showPowerupFeedback(scene, player, powerupName, isCollector) {
         targets: feedbackText,
         y: feedbackText.y - 30,
         alpha: 0,
-        duration: 1000,
+        duration: 1500,
+        ease: 'Power2',
         onComplete: () => feedbackText.destroy(),
     });
 }
 
 
 function applyPowerupEffect(playerSprite, powerupConfig) {
-    console.log('Applying powerup effect:', powerupConfig.name);
+    console.log('Applying powerup effect:', powerupConfig);
 
     switch (powerupConfig.name) {
         case 'health':
             if (playerSprite.health < 100) {
                 playerSprite.health = Math.min(100, playerSprite.health + powerupConfig.effect);
+                console.log('Health updated to:', playerSprite.health);
                 updateHealthBar();
             }
             break;
 
         case 'attack':
-            playerSprite.attackMultiplier = powerupConfig.multiplier;
-            setTimeout(() => {
+            // Initialize attackMultiplier if not exists
+            playerSprite.attackMultiplier = playerSprite.attackMultiplier || 1;
+            // Multiply existing multiplier with new one
+            playerSprite.attackMultiplier *= (powerupConfig.multiplier || 2);
+            console.log('Attack multiplier updated to:', playerSprite.attackMultiplier);
+            
+            // Clear existing timeout if any
+            if (playerSprite.attackTimeout) clearTimeout(playerSprite.attackTimeout);
+            
+            playerSprite.attackTimeout = setTimeout(() => {
                 playerSprite.attackMultiplier = 1;
-            }, powerupConfig.duration);
+                console.log('Attack multiplier reset to 1');
+            }, powerupConfig.duration || 10000);
             break;
 
         case 'speed':
-            playerSprite.speedMultiplier = powerupConfig.multiplier;
-            setTimeout(() => {
+            const baseSpeed = 160; // Base movement speed
+            const baseJumpVelocity = -500; // Base jump velocity
+            
+            // Initialize speedMultiplier if not exists
+            playerSprite.speedMultiplier = playerSprite.speedMultiplier || 1;
+            // Multiply existing multiplier with new one
+            playerSprite.speedMultiplier *= (powerupConfig.multiplier || 1.5);
+            console.log('Speed multiplier updated to:', playerSprite.speedMultiplier);
+
+            // Apply speed boost
+            if (playerSprite === player) { // Only modify speed for local player
+                playerSprite.setMaxVelocity(baseSpeed * playerSprite.speedMultiplier, Math.abs(baseJumpVelocity * playerSprite.speedMultiplier));
+                // Store the current jump velocity for this player
+                playerSprite.currentJumpVelocity = baseJumpVelocity * playerSprite.speedMultiplier;
+            }
+
+            // Clear existing timeout if any
+            if (playerSprite.speedTimeout) clearTimeout(playerSprite.speedTimeout);
+            
+            playerSprite.speedTimeout = setTimeout(() => {
                 playerSprite.speedMultiplier = 1;
-            }, powerupConfig.duration);
+                if (playerSprite === player) {
+                    playerSprite.setMaxVelocity(baseSpeed, Math.abs(baseJumpVelocity));
+                    playerSprite.currentJumpVelocity = baseJumpVelocity;
+                }
+                console.log('Speed multiplier reset to 1');
+            }, powerupConfig.duration || 8000);
             break;
 
         default:
@@ -1652,6 +1727,118 @@ function fireArrow(pointer, power) {
     }
 }
 
+function updateActivePowerupsDisplay(scene, powerupConfig) {
+    if (!scene || !powerupConfig || powerupConfig.name === 'health') return;
+
+    const powerupName = powerupConfig.name.toLowerCase();
+    
+    // Initialize gameState.activePowerups if it doesn't exist
+    if (!gameState.activePowerups) {
+        gameState.activePowerups = {};
+    }
+
+    // Initialize this powerup type if it doesn't exist
+    if (!gameState.activePowerups[powerupName]) {
+        gameState.activePowerups[powerupName] = {
+            count: 0,
+            displaySprite: null,
+            countText: null,
+            durationText: null,
+            duration: powerupConfig.duration,
+            updateInterval: null  // Add this to track the interval
+        };
+    }
+
+    const powerupInfo = gameState.activePowerups[powerupName];
+    powerupInfo.count++;
+    powerupInfo.duration = powerupConfig.duration; // Update duration for new powerup
+
+    // Clear existing update interval if it exists
+    if (powerupInfo.updateInterval) {
+        powerupInfo.updateInterval.remove();
+    }
+
+    const updateDisplay = () => {
+        const baseX = 10;
+        const baseY = 60;
+        const spacing = 40;
+        const index = powerupName === 'attack' ? 0 : 1;
+        const x = baseX + (spacing * index);
+
+        // Clean up existing display elements
+        if (powerupInfo.displaySprite) powerupInfo.displaySprite.destroy();
+        if (powerupInfo.countText) powerupInfo.countText.destroy();
+        if (powerupInfo.durationText) powerupInfo.durationText.destroy();
+
+        // Create icon background (semi-transparent black circle)
+        scene.add.circle(x + 20, baseY + 20, 15, 0x000000, 0.3)
+            .setDepth(99)
+            .setScrollFactor(0);
+
+        // Create powerup sprite
+        powerupInfo.displaySprite = scene.add.sprite(x + 20, baseY + 20, `powerup_${powerupName}`)
+            .setScale(0.5)
+            .setDepth(100)
+            .setScrollFactor(0);
+
+        // Always show count text (even for count = 1)
+        powerupInfo.countText = scene.add.text(x + 30, baseY + 5, `x${powerupInfo.count}`, {
+            fontSize: '14px',
+            fill: '#fff',
+            stroke: '#000',
+            strokeThickness: 3
+        })
+        .setDepth(100)
+        .setScrollFactor(0);
+
+        // Show duration
+        if (powerupInfo.duration) {
+            const remainingSeconds = Math.ceil(powerupInfo.duration / 1000);
+            powerupInfo.durationText = scene.add.text(x + 20, baseY + 35, 
+                `${remainingSeconds}s`, {
+                fontSize: '12px',
+                fill: '#fff',
+                stroke: '#000',
+                strokeThickness: 2
+            })
+            .setOrigin(0.5)
+            .setDepth(100)
+            .setScrollFactor(0);
+        
+            // Create new update interval with proper timing
+            let elapsedTime = 0;
+            powerupInfo.updateInterval = scene.time.addEvent({
+                delay: 1000,
+                callback: () => {
+                    elapsedTime += 1000;
+                    const remaining = Math.ceil((powerupInfo.duration - elapsedTime) / 1000);
+                    if (powerupInfo.durationText && remaining > 0) {
+                        powerupInfo.durationText.setText(`${remaining}s`);
+                    }
+                },
+                repeat: remainingSeconds - 1
+            });
+        }
+    };
+
+    updateDisplay();
+
+    // Create timer for powerup expiration
+    scene.time.delayedCall(powerupInfo.duration, () => {
+        powerupInfo.count--;
+        if (powerupInfo.count <= 0) {
+            // Clean up all display elements
+            if (powerupInfo.displaySprite) powerupInfo.displaySprite.destroy();
+            if (powerupInfo.countText) powerupInfo.countText.destroy();
+            if (powerupInfo.durationText) powerupInfo.durationText.destroy();
+            if (powerupInfo.updateInterval) powerupInfo.updateInterval.remove();
+            delete gameState.activePowerups[powerupName];
+        } else {
+            updateDisplay();
+        }
+    });
+}
+
 const createCheatMenu = function () {
     const menu = document.createElement("div")
     menu.id = "cheat-menu"
@@ -1724,6 +1911,11 @@ const updateCheatUI = function () {
     }
 }
 function updateTimer() {
+    // Only proceed if we have a valid timer element and remaining time
+    if (!gameState.timer.element || typeof gameState.timer.remaining !== 'number') {
+        return;
+    }
+
     const minutes = Math.floor(gameState.timer.remaining / 60);
     const seconds = gameState.timer.remaining % 60;
     gameState.timer.element.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -1733,14 +1925,22 @@ function updateTimer() {
         gameState.timer.element.classList.add('warning');
     }
 
-    if (gameState.timer.remaining <= 0) {
-        // End game when timer reaches 0
-        clearInterval(gameState.timer.interval);
-        endMatch();
-        gameState.timer.element.remove();
-    }
-
+    // Decrement the remaining time
     gameState.timer.remaining--;
+
+    // Check if timer has reached zero
+    if (gameState.timer.remaining < 0) {
+        // Clear interval and remove timer element
+        if (gameState.timer.interval) {
+            clearInterval(gameState.timer.interval);
+            gameState.timer.interval = null;
+        }
+        if (gameState.timer.element) {
+            gameState.timer.element.remove();
+        }
+        // End the match
+        endMatch();
+    }
 }
 
 // Add this function to handle game initialization
@@ -1753,14 +1953,22 @@ function startGame(gameData, socketId) {
     gameState.timer.element.className = 'game-timer';
     gameContainer.appendChild(gameState.timer.element);
 
-    // Initialize timer value (3 minutes = 180 seconds)
-    gameState.timer.remaining = 180;
+    // Initialize timer
+    gameState.timer = {
+        element: document.createElement('div'),
+        remaining: 180, // 3 minutes
+        interval: null
+    };
+    
+    gameState.timer.element.className = 'game-timer';
+    document.getElementById('gameContainer').appendChild(gameState.timer.element);
 
     // Initial display
     updateTimer();
 
-    // Update every second
+    // Start the countdown
     gameState.timer.interval = setInterval(updateTimer, 1000);
+
 
     // Initialize Phaser game if not already created
     if (!window.game.scene) {
@@ -1853,7 +2061,7 @@ function spawnAllPlayers(playerAssignments, socketId) {
         console.log("playerData.id", playerData.id)
         // If this is our player, set up controls and camera
         if (playerData.id === Socket.getSocket().id) {
-            console.log("S yes")
+            //console.log("S yes")
             player = newPlayer
             setupPlayerControls.call(this, player)
             //this.cameras.main.startFollow(player);

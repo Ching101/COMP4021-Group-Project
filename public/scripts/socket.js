@@ -120,9 +120,9 @@ const Socket = (function () {
 
         // Update the weapon_spawned handler to use .call() like powerups
         socket.on('weapon_spawned', (weaponData) => {
-            console.log('Received weapon spawn event:', weaponData);
+            //console.log('Received weapon spawn event:', weaponData);
             if (weaponData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
-                console.log('Spawning weapon in game');
+                //console.log('Spawning weapon in game');
                 spawnWeapon.call(
                     window.game.scene.scenes[0],
                     weaponData.x,
@@ -141,7 +141,7 @@ const Socket = (function () {
 
         // Add this after the weapon_spawned handler
         socket.on('weapon_collected', (data) => {
-            console.log('Weapon collected:', data);
+            //console.log('Weapon collected:', data);
             const weapon = gameState.weapons.get(data.weaponId);
             if (weapon) {
                 // Update the collecting player's prop
@@ -166,7 +166,7 @@ const Socket = (function () {
         });
 
         socket.on('powerup_spawned', (powerupData) => {
-            console.log('Received powerup spawn event:', powerupData);
+            //console.log('Received powerup spawn event:', powerupData);
         
             // Get the current game scene properly
             const currentScene = window.game?.scene?.scenes[0];
@@ -176,10 +176,10 @@ const Socket = (function () {
             }
         
             if (powerupData.roomId === window.currentRoomId) {
-                console.log('Spawning powerup in game scene:', {
-                    sceneKey: currentScene.scene.key,
-                    powerupId: powerupData.id
-                });
+                //console.log('Spawning powerup in game scene:', {
+                //    sceneKey: currentScene.scene.key,
+                //    powerupId: powerupData.id
+                //});
         
                 // Wait for next frame to ensure scene is ready
                 currentScene.time.delayedCall(0, () => {
@@ -208,49 +208,88 @@ const Socket = (function () {
         });
 
         socket.on('powerup_collected', (data) => {
-            console.log('Powerup collected event received:', {
-                powerupId: data.powerupId,
-                existingPowerups: Array.from(gameState.powerups.keys()),
-                fullData: data
-            });
-        
-            // Get the current game scene
-            const scene = window.game?.scene?.scenes[0];
-            if (!scene) return;
-        
-            // Try to find powerup by ID first
-            let powerup = gameState.powerups.get(data.powerupId);
+            console.log('Powerup collected event received:', data);
             
-            if (!powerup) {
-                // Try to find by position with increased tolerance
-                for (const [_, p] of gameState.powerups.entries()) {
-                    if (p && p.active) {  // Check if powerup exists and is active
-                        const xDiff = Math.abs(p.x - data.x);
-                        const yDiff = Math.abs(p.y - data.y);
-                        if (xDiff < 20 && yDiff < 20) {
-                            console.log('Found powerup by position match');
-                            powerup = p;
-                            break;
+            const scene = window.game?.scene?.scenes[0];
+            if (!scene) {
+                console.error('No active scene found for powerup cleanup');
+                return;
+            }
+        
+            // Update the collecting player's effects
+            const playerSprite = PlayerManager.players.get(data.playerId);
+            if (playerSprite) {
+                // Only apply effects if we didn't already handle it locally
+                if (data.playerId !== socket.id) {
+                    applyPowerupEffect(playerSprite, data.powerupType);
+                    showPowerupFeedback(scene, playerSprite, data.powerupType.name, false);
+                } else {
+                    // For the local player
+                    const powerupConfig = {
+                        name: data.powerupType.name.toLowerCase(),
+                        duration: data.powerupType.duration,
+                        multiplier: data.powerupType.multiplier
+                    };
+                    
+                    // Apply the powerup effect
+                    applyPowerupEffect(playerSprite, data.powerupType);
+                    
+                    // Update display for non-health powerups
+                    if (powerupConfig.name !== 'health') {
+                        // Initialize gameState.activePowerups if it doesn't exist
+                        if (!gameState.activePowerups) {
+                            gameState.activePowerups = {};
                         }
+                        
+                        // Pass the normalized powerup configuration
+                        updateActivePowerupsDisplay(scene, powerupConfig);
                     }
+                    
+                    showPowerupFeedback(scene, playerSprite, powerupConfig.name, true);
                 }
             }
         
-            if (powerup && powerup.active) {
-                // Apply powerup effect to the correct player
-                const playerSprite = PlayerManager.players.get(data.playerId);
-                if (playerSprite) {
-                    // Apply effect before cleanup
-                    applyPowerupEffect(playerSprite, data.powerupType);
-                    
-                    // Show feedback for other players
-                    if (playerSprite !== player) {
-                        showPowerupFeedback(scene, playerSprite, data.powerupType.name, false);
+            // Clean up powerup sprites
+            const powerupsToClean = scene.children.list.filter(child => 
+                child.texture && 
+                child.texture.key && 
+                child.texture.key.startsWith('powerup_') &&
+                Math.abs(child.x - data.x) < 20 && 
+                Math.abs(child.y - data.y) < 20
+            );
+        
+            powerupsToClean.forEach(powerupSprite => {
+                try {
+                    // Remove from gameState
+                    gameState.powerups.delete(powerupSprite.id);
+                    gameState.powerups.delete(`pos_${Math.floor(powerupSprite.x)}_${Math.floor(powerupSprite.y)}`);
+        
+                    // Disable physics
+                    if (powerupSprite.body) {
+                        powerupSprite.body.enable = false;
                     }
         
-                    // Clean up the powerup
-                    cleanupPowerup(powerup, scene);
+                    // Remove colliders
+                    if (scene.physics?.world) {
+                        scene.physics.world.colliders.getActive()
+                            .filter(collider => 
+                                collider.object1 === powerupSprite || 
+                                collider.object2 === powerupSprite
+                            ).forEach(collider => {
+                                collider.destroy();
+                            });
+                    }
+        
+                    // Destroy the sprite
+                    powerupSprite.destroy(true);
+                    console.log('Powerup cleanup completed:', powerupSprite.id);
+                } catch (error) {
+                    console.error('Error during powerup cleanup:', error);
                 }
+            });
+        
+            if (powerupsToClean.length === 0) {
+                console.log('No powerups found to clean up at location:', {x: data.x, y: data.y});
             }
         });
 

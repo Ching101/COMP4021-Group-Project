@@ -48,14 +48,29 @@ const activeGames = new Map();
 
 const SPAWN_CONFIG = {
     WEAPONS: {
-        interval: 5000,  // 5 seconds
+        interval: 5000,
         types: ["DAGGER", "SWORD", "BOW"]
     },
     POWERUPS: {
         interval: 10000,
         types: ["HEALTH", "ATTACK", "SPEED"],
-        nextId: 1  // Add this for ID generation
-    },
+        configs: {
+            ATTACK: {
+                name: "attack",
+                duration: 10000,
+                multiplier: 2
+            },
+            SPEED: {
+                name: "speed",
+                duration: 8000,
+                multiplier: 1.5
+            },
+            HEALTH: {
+                name: "health",
+                effect: 20
+            }
+        }
+    }
 };
 
 function startItemSpawning(roomId, io, game) {
@@ -97,22 +112,19 @@ function startItemSpawning(roomId, io, game) {
             return;
         }
 
-        const powerupType = SPAWN_CONFIG.POWERUPS.types[
-            Math.floor(Math.random() * SPAWN_CONFIG.POWERUPS.types.length)
-        ];
-
+        const powerupType = SPAWN_CONFIG.POWERUPS.types[Math.floor(Math.random() * SPAWN_CONFIG.POWERUPS.types.length)];
+        const powerupConfig = SPAWN_CONFIG.POWERUPS.configs[powerupType];
         const powerupData = {
             roomId,
             type: powerupType,
             powerupConfig: {
-                name: powerupType.toLowerCase(),
-                effect: powerupType === 'HEALTH' ? 20 : 0,
-                multiplier: powerupType === 'ATTACK' ? 2 : powerupType === 'SPEED' ? 1.5 : 1,
-                duration: powerupType === 'ATTACK' ? 10000 : powerupType === 'SPEED' ? 8000 : 0
+                ...powerupConfig,
+                name: powerupType.toLowerCase(), // Add this explicitly
+                color: powerupType === "HEALTH" ? 0xff0000 : powerupType === "ATTACK" ? 0xff6b00 : 0x00ff00
             },
             x: Math.floor(Math.random() * (750 - 50) + 50),
-            y: Math.floor(Math.random() * (500 - 50) + 50),
-            id: Date.now()
+            y: 100,
+            id: `powerup_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
         };
 
         console.log('Emitting powerup spawn:', powerupData);
@@ -297,7 +309,7 @@ io.on("connection", (socket) => {
                             id: `powerup_${Date.now()}_${Math.random().toString(36).slice(2, 11)}` // More unique ID using slice instead of substr
                         };
 
-                        console.log('Spawning powerup:', powerupData);
+                        //console.log('Spawning powerup:', powerupData);
                         io.to(roomId).emit('powerup_spawned', powerupData);
                     }
                 }, SPAWN_CONFIG.POWERUPS.interval);
