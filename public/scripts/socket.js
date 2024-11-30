@@ -88,6 +88,23 @@ const Socket = (function () {
         // Update game started handler
         socket.on('game_started', (gameData) => {
             console.time('gameLoadingTime');
+            
+            // Stop background music if it's playing
+            if (window.gameSounds && window.gameSounds.background) {
+                window.gameSounds.background.pause();
+                window.gameSounds.background.currentTime = 0;
+            }
+
+            // Play game music if music is enabled
+            const musicButton = document.querySelector(".music-button");
+            if (musicButton && musicButton.classList.contains("active")) {
+                // You'll need to add this new audio file to your assets
+                window.gameSounds.game = new Audio("/assets/music/Gamepage.mp3");
+                window.gameSounds.game.loop = true;
+                window.gameSounds.game.play()
+                    .catch(error => console.log("Audio play failed:", error));
+            }
+
             console.log('[Loading] Game start received:', new Date().toISOString());
 
             const loadingEl = $('<div class="loading-spinner"></div>');
@@ -459,6 +476,27 @@ const Socket = (function () {
         });
 
         socket.on('game_ended', (data) => {
+            // Get the music button state
+            const musicButton = document.querySelector(".music-button");
+            const isMusicActive = musicButton.classList.contains("active");
+
+            if (isMusicActive) {
+                // Stop the game music
+                if (window.gameSounds.game) {
+                    window.gameSounds.game.pause();
+                    window.gameSounds.game.currentTime = 0;
+                }
+
+                // Play appropriate end game music
+                if (data.winner === socket.id) {
+                    window.gameSounds.victory.play()
+                        .catch(error => console.log("Audio play failed:", error));
+                } else {
+                    window.gameSounds.defeat.play()
+                        .catch(error => console.log("Audio play failed:", error));
+                }
+            }
+
             // Stop all game activities
             gameState.gameStarted = false;
 

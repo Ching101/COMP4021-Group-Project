@@ -2,10 +2,12 @@ $(document).ready(function () {
     // Create all sounds at the start
     const sounds = {
         background: new Audio("/assets/music/Frontpage.mp3"),
+        game: new Audio("/assets/music/Gamepage.mp3"),
         victory: new Audio("/assets/music/Victory.mp3"),
         defeat: new Audio("/assets/music/Defeat.mp3"),
     }
     sounds.background.loop = true
+    sounds.game.loop = true
 
     const musicButton = document.querySelector(".music-button")
 
