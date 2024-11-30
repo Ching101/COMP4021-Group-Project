@@ -406,10 +406,10 @@ const WEAPONS = {
     BOW: {
         name: "bow",
         damage: 35,
-        chargeTime: 500,
+        attackSpeed: 500,
         range: 600,
+        chargeTime: 1000,
         projectileSpeed: 800,
-        isThrowable: false,
     },
 }
 
@@ -604,6 +604,14 @@ function preload() {
             }
         })
     }
+    // Load arrow sprite
+    this.load.image('arrow', 'assets/weapons/arrow.png');
+    console.log('[Preload] Loading arrow texture');
+
+    // Add error handler for texture loading
+    this.load.on('loaderror', function (fileObj) {
+        console.error('[Preload] Error loading file:', fileObj.key, fileObj.src);
+    });
 }
 
 function updateGameStats() {
@@ -1036,6 +1044,9 @@ function basicAttack(pointer) {
 
     // Handle different weapon types
     switch (currentWeapon.name) {
+        case 'bow':
+            handleBowAttack.call(this, pointer);
+            break;
         case "dagger":
         case "sword":
             // Start attack animation
@@ -1064,9 +1075,6 @@ function basicAttack(pointer) {
                     })
                 }
             }
-            break
-        case "bow":
-            chargeBow.call(this, pointer)
             break
     }
 }
@@ -1655,8 +1663,8 @@ function handlePlayerDamage(playerSprite, damage) {
     playerSprite.alpha = 0.8;
 
     // Play animation
-    playerSprite.playAnimation(`Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}`);
-
+    const hurtAnim = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}`;
+    playerSprite.playAnimation(hurtAnim, false);
     // const hurtAnim = `Player${player.number}_${player.direction}_Hurt_${player.currentProp}`
     // player.play(hurtAnim).once("animationcomplete", () => {
     //     // Return to previous animation after hurt animation completes
@@ -1859,141 +1867,259 @@ function throwDagger(pointer) {
     })
 }
 
-function chargeBow(pointer) {
-    if (!currentWeapon) return
+// New bow attack handler
+function handleBowAttack(pointer) {
+    console.log('[BOW] Starting bow attack handler');
 
-    const chargeStart = this.time.now
+    // Check if player can attack
+    if (player.isAttacking || player.attackCooldown) {
+        console.log('[BOW] Attack blocked - isAttacking:', player.isAttacking, 'cooldown:', player.attackCooldown);
+        return;
+    }
 
-    // Visual charge effect
+    // Start charging
+    const chargeStartTime = Date.now();
+    player.isAttacking = true;
+    console.log('[BOW] Charge started at:', chargeStartTime);
+
+    // Create charge bar
     const chargeBar = this.add.rectangle(
         player.x,
         player.y - 40,
         0,
         5,
         0xff0000
-    )
+    ).setDepth(5);
+    console.log('[BOW] Charge bar created');
 
-    // Charge update
+    // Add the missing charge interval
     const chargeInterval = this.time.addEvent({
         delay: 16,
         callback: () => {
-            const chargeTime = this.time.now - chargeStart
-            const chargePercent = Math.min(
-                chargeTime / currentWeapon.chargeTime,
-                1
-            )
-            chargeBar.width = 40 * chargePercent
-
-            // Add glow effect as charge increases
-            chargeBar.setFillStyle(
-                0xff0000 + (Math.floor(chargePercent * 255) << 8)
-            )
+            const chargeTime = Date.now() - chargeStartTime;
+            const chargePercent = Math.min(chargeTime / WEAPONS.BOW.chargeTime, 1);
+            chargeBar.width = 40 * chargePercent;
+            chargeBar.setPosition(player.x, player.y - 40);
+            chargeBar.setFillStyle(0xff0000 + (Math.floor(chargePercent * 255) << 8));
         },
-        loop: true,
-    })
+        loop: true
+    });
 
-    // Release on mouse up
+    // Emit charge start event
+    Socket.getSocket().emit('bow_charge_start', {
+        roomId: gameState.roomId,
+        playerId: Socket.getSocket().id,
+        position: { x: player.x, y: player.y }
+    });
+    console.log('[BOW] Charge start event emitted');
+
+    // Handle release
     const releaseFunction = () => {
-        chargeInterval.destroy()
-        chargeBar.destroy()
+        console.log('[BOW] Release function triggered');
+        chargeInterval.destroy();
+        chargeBar.destroy();
+        player.isAttacking = false;
 
-        const chargeTime = this.time.now - chargeStart
-        const power = Math.min(chargeTime / currentWeapon.chargeTime, 1)
+        const chargeTime = Date.now() - chargeStartTime;
+        const power = Math.min(chargeTime / WEAPONS.BOW.chargeTime, 1);
+        console.log('[BOW] Release power:', power);
 
-        // Add charge feedback
-        const powerText = this.add
-            .text(
-                player.x,
-                player.y - 50,
-                `Power: ${Math.floor(power * 100)}%`,
-                {
-                    fontSize: "16px",
-                    fill: "#fff",
-                }
-            )
-            .setOrigin(0.5)
+        // Calculate angle between player and pointer
+        const angle = Phaser.Math.Angle.Between(
+            player.x,
+            player.y,
+            pointer.worldX,
+            pointer.worldY
+        );
+        console.log('[BOW] Release angle:', angle);
 
-        this.tweens.add({
-            targets: powerText,
-            y: powerText.y - 30,
-            alpha: 0,
-            duration: 1000,
-            onComplete: () => powerText.destroy(),
-        })
+        // Create arrow through ArrowManager
+        const arrowId = `arrow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log('[BOW] Creating arrow with ID:', arrowId);
 
-        fireArrow.call(this, pointer, power)
+        ArrowManager.createArrow(this, {
+            arrowId: arrowId,
+            position: { x: player.x, y: player.y },
+            angle: angle,
+            power: power,
+            playerId: Socket.getSocket().id
+        });
 
-        this.input.off("pointerup", releaseFunction)
-    }
+        // Emit arrow release event
+        Socket.getSocket().emit('bow_charge_release', {
+            roomId: gameState.roomId,
+            playerId: Socket.getSocket().id,
+            position: { x: player.x, y: player.y },
+            power: power,
+            angle: angle,
+            arrowId: arrowId
+        });
+        console.log('[BOW] Arrow release event emitted');
 
-    this.input.on("pointerup", releaseFunction)
+        // Set cooldown
+        player.attackCooldown = true;
+        this.time.delayedCall(WEAPONS.BOW.attackSpeed, () => {
+            player.attackCooldown = false;
+            console.log('[BOW] Attack cooldown ended');
+        });
+
+        this.input.off('pointerup', releaseFunction);
+    };
+
+    this.input.on('pointerup', releaseFunction);
 }
 
-function fireArrow(pointer, power) {
-    const arrow = this.physics.add.sprite(player.x, player.y, "arrow")
+const ArrowManager = {
+    arrows: new Map(),
+    ARROW_CONFIG: {
+        GRAVITY: 300,
+        BASE_SPEED: 800,
+        MAX_DISTANCE: 1000,
+        LIFETIME: 3000,
+        DAMAGE_MULTIPLIER: 1.5
+    },
 
-    // Calculate angle between player and pointer
-    const angle = Phaser.Math.Angle.Between(
-        player.x,
-        player.y,
-        pointer.worldX,
-        pointer.worldY
-    )
 
-    // Set arrow rotation to match angle
-    arrow.rotation = angle
 
-    // Calculate velocity components using angle
-    const speed = currentWeapon.projectileSpeed * power
-    arrow.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed)
 
-    // Add slight gravity effect
-    arrow.body.setGravityY(150)
+    createArrow(scene, data) {
+        console.log('[ArrowManager] Creating arrow:', data);
 
-    // Add collision with platforms
-    this.physics.add.collider(arrow, platforms, (arrow) => {
-        // Stick the arrow where it hit
-        arrow.body.setVelocity(0, 0)
-        arrow.body.setGravityY(0)
-        arrow.body.setImmovable(true)
+        const arrow = scene.physics.add.sprite(
+            data.position.x,
+            data.position.y,
+            'arrow'
+        ).setDepth(3);
 
-        // Destroy arrow after a delay
-        this.time.delayedCall(2000, () => {
-            if (arrow && arrow.active) {
-                arrow.destroy()
+        // Enhanced physics setup
+        arrow.rotation = data.angle;
+        const speed = this.ARROW_CONFIG.BASE_SPEED * data.power;
+
+        // Add velocity with improved trajectory
+        arrow.body.setVelocity(
+            Math.cos(data.angle) * speed,
+            Math.sin(data.angle) * speed
+        );
+
+        // Add gravity and air resistance
+        arrow.body.setGravityY(this.ARROW_CONFIG.GRAVITY);
+        arrow.body.setDrag(10, 0);
+
+        // Store additional data for physics validation
+        arrow.initialData = {
+            speed,
+            angle: data.angle,
+            timestamp: Date.now(),
+            origin: { ...data.position }
+        };
+
+        // Rotate arrow based on velocity
+        scene.events.on('update', () => {
+            if (arrow.active) {
+                const velocity = arrow.body.velocity;
+                arrow.rotation = Math.atan2(velocity.y, velocity.x);
             }
-        })
-    })
+        });
 
-    // Make arrow persist longer if it doesn't hit anything
-    this.time.delayedCall(3000, () => {
-        if (arrow && arrow.active) {
-            arrow.destroy()
+        // Store arrow reference
+        this.arrows.set(data.arrowId, arrow);
+
+        // Add collision detection
+        this.setupCollisions(scene, arrow, data);
+
+        // Add lifetime to prevent memory leaks
+        scene.time.delayedCall(this.ARROW_CONFIG.LIFETIME, () => {
+            if (arrow.active) {
+                this.removeArrow(data.arrowId);
+            }
+        });
+
+        return arrow;
+    },
+
+    setupCollisions(scene, arrow, data) {
+        // Collision with platforms
+        scene.physics.add.collider(arrow, platforms, () => {
+            this.handleArrowStick(arrow, data);
+        });
+
+        // Collision with players
+        PlayerManager.players.forEach(otherPlayer => {
+            if (otherPlayer.id !== data.playerId) {
+                scene.physics.add.overlap(arrow, otherPlayer, () => {
+                    this.handleArrowHit(scene, arrow, otherPlayer, data);
+                });
+            }
+        });
+    },
+
+    handleArrowStick(arrow, data) {
+        if (!arrow.active) return;
+
+        // Stop arrow movement
+        arrow.body.setVelocity(0, 0);
+        arrow.body.setGravityY(0);
+        arrow.body.setImmovable(true);
+
+        // Remove after delay
+        setTimeout(() => this.removeArrow(data.arrowId), 2000);
+    },
+
+    handleArrowHit(scene, arrow, hitPlayer, data) {
+        if (!arrow.active) return;
+
+        // Calculate damage based on speed and distance
+        const distance = Phaser.Math.Distance.Between(
+            data.position.x,
+            data.position.y,
+            arrow.x,
+            arrow.y
+        );
+
+        const speed = Math.sqrt(
+            arrow.body.velocity.x ** 2 +
+            arrow.body.velocity.y ** 2
+        );
+
+        const baseDamage = WEAPONS.BOW.damage;
+        const speedMultiplier = speed / this.ARROW_CONFIG.BASE_SPEED;
+        const distanceMultiplier = 1 - (distance / this.ARROW_CONFIG.MAX_DISTANCE);
+
+        const finalDamage = Math.round(
+            baseDamage *
+            speedMultiplier *
+            distanceMultiplier *
+            this.ARROW_CONFIG.DAMAGE_MULTIPLIER
+        );
+
+        // Emit hit event
+        Socket.getSocket().emit('bow_arrow_hit', {
+            roomId: gameState.roomId,
+            arrowId: data.arrowId,
+            targetId: hitPlayer.id,
+            damage: finalDamage,
+            position: { x: arrow.x, y: arrow.y },
+            hitData: {
+                speed,
+                distance,
+                angle: arrow.rotation
+            }
+        });
+
+        // Remove arrow
+        this.removeArrow(data.arrowId);
+    },
+
+    removeArrow(arrowId) {
+        const arrow = this.arrows.get(arrowId);
+        if (arrow) {
+            arrow.destroy();
+            this.arrows.delete(arrowId);
+            console.log('[ArrowManager] Arrow removed:', arrowId);
         }
-    })
 
-    // Add debug visualization of arrow path
-    if (false && debugText) {
-        const arrowPath = this.add.graphics()
-        arrowPath.lineStyle(1, 0xff0000, 0.5)
-        arrowPath.beginPath()
-        arrowPath.moveTo(arrow.x, arrow.y)
-
-        this.time.addEvent({
-            delay: 16,
-            callback: () => {
-                if (arrow.active) {
-                    arrowPath.lineTo(arrow.x, arrow.y)
-                }
-            },
-            repeat: 50,
-        })
-
-        this.time.delayedCall(1000, () => {
-            arrowPath.destroy()
-        })
     }
-}
+};
 
 function updateActivePowerupsDisplay(scene, powerupConfig) {
     if (!scene || !powerupConfig || powerupConfig.name === "health") return
