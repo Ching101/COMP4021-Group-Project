@@ -177,6 +177,7 @@ const PlayerManager = {
                         } else {
                             const textureKey = `${this.currentAnim}_${this.currentFrame}`
                             this.setTexture(textureKey)
+                            console.log("textureKey", textureKey);
                         }
                     },
                     loop: false,
@@ -1015,7 +1016,8 @@ function updateHealthBar() {
 }
 
 function basicAttack(pointer) {
-    if (player.isAttacking || player.attackCooldown) {
+    // First check if player can attack
+    if (player.isAttacking || player.attackCooldown || player.isPlayingHurtA) {
         return;
     }
 
@@ -1642,32 +1644,135 @@ function handlePlayerDamage(playerSprite, damage) {
     // Update health
     playerSprite.health = Math.max(0, playerSprite.health - damage);
 
-
     // Update the player's health bar
     if (playerSprite.updateHealthBar) {
-        playerSprite.updateHealthBar()
+        playerSprite.updateHealthBar();
     }
 
     // Add brief invulnerability
-    playerSprite.isInvulnerable = true
+    playerSprite.isInvulnerable = true;
     setTimeout(() => {
-        playerSprite.isInvulnerable = false
-    }, 500)
+        playerSprite.isInvulnerable = false;
+    }, 500);
 
-    // Play hurt animation
-    const hurtAnim = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}`
-    playerSprite.playAnimation(hurtAnim)
+    // Get the current scene
+    const scene = window.game.scene.scenes[0];
+    if (!scene) return;
+
+    // Add red overlay effect
+    playerSprite.setTint(0xff0000);
+    playerSprite.alpha = 0.8;
+
+    // Play animation
+    const hurtAnim = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}`;
+    playerSprite.playAnimation(hurtAnim, false);
+
+    // const hurtAnim = `Player${player.number}_${player.direction}_Hurt_${player.currentProp}`
+    // player.play(hurtAnim).once("animationcomplete", () => {
+    //     // Return to previous animation after hurt animation completes
+    //     if (player.body.velocity.x !== 0) {
+    //         player.play(`player${player.number}_${player.direction}_run`)
+    //     } else {
+    //         player.play(`player${player.number}_${player.direction}_idle`)
+    //     }
+    // })
+
+    // Remove red overlay after a short duration
+    setTimeout(() => {
+        playerSprite.clearTint();
+        playerSprite.alpha = 1;
+    }, 200);
+
+    // Screen shake effect (if this is the local player)
+    if (playerSprite === player && scene) {
+        scene.cameras.main.shake(100, 0.005);
+    }
 
     // Check for player death
     if (playerSprite.health <= 0) {
         handlePlayerDeath(playerSprite);
         console.log('Player died:', playerSprite.id);
+    }
 
-    }
     if (playerSprite === player) {
-        gameState.stats.damageDealt += damage
-        updateGameStats()
+        gameState.stats.damageDealt += damage;
+        updateGameStats();
     }
+}
+
+function playHurtAnimation(scene, playerSprite) {
+    // If already playing animation, don't interrupt
+    if (playerSprite.isPlayingHurt) return false;
+    
+    playerSprite.isPlayingHurt = true;
+    playerSprite.currentAnim = null; // Prevent other animations from running
+    
+    // Clear existing animation timer
+    if (playerSprite.animationTimer) {
+        playerSprite.animationTimer.destroy();
+        playerSprite.animationTimer = null;
+    }
+
+    // Animation parameters
+    const maxFrames = 3;
+    const frameDelay = 100;
+
+    // Create frames array
+    const frames = Array.from({ length: maxFrames }, (_, i) =>
+        `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_${i + 1}`
+    );
+
+    // Set initial frame
+    playerSprite.setTexture(frames[0]);
+
+    // Animation loop
+    let currentFrame = 0;
+    const animationLoop = () => {
+        if (!playerSprite.isPlayingHurt) return;
+
+        if (currentFrame < frames.length) {
+            const currentTexture = frames[currentFrame];
+            playerSprite.setTexture(currentTexture);
+
+            // Emit animation frame for network play
+            if (playerSprite === player) {
+                const socket = Socket.getSocket();
+                if (socket) {
+                    socket.emit("player_animation_frame", {
+                        roomId: gameState.roomId,
+                        id: socket.id,
+                        frame: currentTexture,
+                        direction: playerSprite.direction,
+                        animation: 'hurt'
+                    });
+                }
+            }
+
+            currentFrame++;
+            scene.time.delayedCall(frameDelay, animationLoop);
+        } else {
+            // Animation complete
+            playerSprite.isPlayingHurt = false;
+            
+            // Check movement state after hurt animation ends
+            if (playerSprite === player) {
+                if (cursors.left.isDown || cursors.right.isDown) {
+                    const runAnim = `Player${playerSprite.number}_${playerSprite.direction}_Run_${playerSprite.currentProp}`;
+                    playerSprite.currentAnim = runAnim;
+                    playerSprite.playAnimation(runAnim, true);
+                } else {
+                    const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Idle_${playerSprite.currentProp}_1`;
+                    playerSprite.setTexture(idleTexture);
+                    playerSprite.currentAnim = null;
+                }
+            }
+        }
+    };
+
+    // Start the animation loop
+    animationLoop();
+
+    return true;
 }
 
 function handlePlayerDeath(playerSprite) {

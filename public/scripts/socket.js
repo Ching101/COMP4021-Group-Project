@@ -410,9 +410,9 @@ const Socket = (function () {
                 const otherPlayer = PlayerManager.players.get(moveData.id);
                 if (otherPlayer) {
                     // If player is attacking, ignore movement updates completely
-                    if (otherPlayer.isAttacking || otherPlayer.attackCooldown) {
-                        return;
-                    }
+                    // if (otherPlayer.isAttacking || otherPlayer.attackCooldown) {
+                    //     return;
+                    // }
 
                     // Update player position and velocity
                     otherPlayer.setPosition(moveData.x, moveData.y);
