@@ -88,7 +88,7 @@ const Socket = (function () {
         // Update game started handler
         socket.on('game_started', (gameData) => {
             console.time('gameLoadingTime');
-            
+
             // Stop background music if it's playing
             if (window.gameSounds && window.gameSounds.background) {
                 window.gameSounds.background.pause();
@@ -437,6 +437,12 @@ const Socket = (function () {
             if (window.game && window.game.scene.scenes[0]) {
                 const otherPlayer = PlayerManager.players.get(moveData.id);
                 if (otherPlayer) {
+                    // Add death check
+                    if (otherPlayer.isDead) {
+                        otherPlayer.setVelocity(0, 0);
+                        return;
+                    }
+
                     // If player is attacking, ignore movement updates completely
                     if (otherPlayer.isAttacking || otherPlayer.attackCooldown) {
                         return;
