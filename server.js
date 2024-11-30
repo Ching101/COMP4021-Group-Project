@@ -767,6 +767,17 @@ io.on("connection", (socket) => {
             game.arrows.delete(data.arrowId);
         }
     });
+
+    socket.on('player_health_update', (data) => {
+        const game = activeGames.get(data.roomId);
+        if (game) {
+            // Store player's health in game state
+            if (!game.playerHealth) {
+                game.playerHealth = new Map();
+            }
+            game.playerHealth.set(data.playerId, data.health);
+        }
+    });
 })
 
 // This helper function checks whether the text only contains word characters
@@ -1009,72 +1020,63 @@ function startGameTimer(roomId, io) {
     }, 1000)
 }
 function endGame(roomId, io, reason) {
-    const game = activeGames.get(roomId)
-    if (!game) return
+    const game = activeGames.get(roomId);
+    if (!game) return;
 
     // Clear all timers
-    clearInterval(game.timer)
-    if (game.spawnTimers.weapons) clearInterval(game.spawnTimers.weapons)
-    if (game.spawnTimers.powerups) clearInterval(game.spawnTimers.powerups)
+    clearInterval(game.timer);
+    if (game.spawnTimers.weapons) clearInterval(game.spawnTimers.weapons);
+    if (game.spawnTimers.powerups) clearInterval(game.spawnTimers.powerups);
 
     // Set game as inactive
-    game.active = false
-    game.started = false
+    game.active = false;
+    game.started = false;
 
-    // Calculate winner based on reason
-    let winner = null
-    game.alivePlayers.forEach((playerId) => {
-        io.sockets.sockets.get(playerId)
-    })
-    if (reason === "last_player_standing" && game.alivePlayers.size === 1) {
-        winner = Array.from(game.alivePlayers)[0]
-        console.log("Last player standing winner:", winner)
-    }
-    let highestHealth = -1
-    let healthiestPlayer = null
+    // Request health information from all players
+    io.to(roomId).emit("game_ended_health", {
+        alivePlayers: Array.from(game.alivePlayers)
+    });
 
-    // Iterate through alive players to find highest health
-    for (const playerId of game.alivePlayers) {
-        const playerSocket = io.sockets.sockets.get(playerId)
-
-        if (
-            playerSocket &&
-            playerSocket.player &&
-            playerSocket.player.health > highestHealth
-        ) {
-            highestHealth = playerSocket.player.health
-            healthiestPlayer = playerId
-        }
-    }
-    winner = healthiestPlayer
-    console.log("Time up winner:", {
-        winner,
-        finalHealth: highestHealth,
-    })
-
-    // Emit game end event to all players
-    const finalStats = {
-        totalPlayers: game.players.size,
-        duration: GAME_CONFIG.DURATION - game.timeRemaining,
-    }
-
-    console.log("Emitting game end:", {
-        reason,
-        winner,
-        stats: finalStats,
-    })
-
-    io.to(roomId).emit("game_ended", {
-        reason: reason,
-        winner: winner,
-        finalStats: finalStats,
-    })
-
-    // Clean up game data after a delay
+    // Wait for health data collection (1 second timeout)
     setTimeout(() => {
-        console.log("Cleaning up game data for room:", roomId)
-        activeGames.delete(roomId)
-    }, 5000)
+        // Get all players' health information
+        const playerHealths = game.playerHealth || new Map();
+        const finalStats = {
+            totalPlayers: game.players.size,
+            duration: GAME_CONFIG.DURATION - game.timeRemaining,
+            playerHealths: Object.fromEntries(playerHealths),
+        };
+
+        // Calculate winner based on health
+        let winner = null;
+        let highestHealth = -1;
+
+        playerHealths.forEach((health, playerId) => {
+            if (health > highestHealth) {
+                highestHealth = health;
+                winner = playerId;
+            }
+        });
+
+        console.log("Emitting game end:", {
+            reason,
+            winner,
+            stats: finalStats,
+        });
+
+        // Emit game end event with health information
+        io.to(roomId).emit("game_ended", {
+            reason: reason,
+            winner: winner,
+            finalStats: finalStats
+        });
+
+        // Clean up game data after a delay
+        setTimeout(() => {
+            console.log("Cleaning up game data for room:", roomId);
+            activeGames.delete(roomId);
+        }, 5000);
+    }, 2000); // Wait 1 second for health data collection
 }
 
 function checkGameEnd(roomId, io) {

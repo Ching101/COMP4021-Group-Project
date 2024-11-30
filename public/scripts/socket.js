@@ -171,7 +171,7 @@ const Socket = (function () {
         });
 
         // Add this after the weapon_spawned handler
-        
+
         // Add this after the weapon_spawned handler
         socket.on('weapon_collected', (data) => {
             const weapon = gameState.weapons.get(data.weaponId);
@@ -181,22 +181,22 @@ const Socket = (function () {
                 if (playerSprite) {
                     // Stop any current animations
                     playerSprite.anims.stop();
-        
+
                     // Update the prop
                     PlayerManager.updatePlayerProp(playerSprite, data.weaponName);
-        
+
                     // Set idle texture
                     playerSprite.setTexture(
                         `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`
                     );
-        
+
                     // Show feedback text for all players
                     const scene = window.game?.scene?.scenes[0];
                     if (scene) {
-                        const message = data.playerId === socket.id ? 
+                        const message = data.playerId === socket.id ?
                             `Picked up ${data.weaponName.toUpperCase()}!` :
                             `Player ${playerSprite.number} got ${data.weaponName.toUpperCase()}!`;
-        
+
                         const feedbackText = scene.add
                             .text(playerSprite.x, playerSprite.y - 80, message, {
                                 fontSize: "16px",
@@ -206,7 +206,7 @@ const Socket = (function () {
                                 }
                             })
                             .setOrigin(0.5);
-        
+
                         scene.tweens.add({
                             targets: feedbackText,
                             y: feedbackText.y - 30,
@@ -216,7 +216,7 @@ const Socket = (function () {
                         });
                     }
                 }
-        
+
                 // Remove weapon from game state and destroy sprite
                 gameState.weapons.delete(data.weaponId);
                 weapon.destroy();
@@ -697,6 +697,22 @@ const Socket = (function () {
                     if (hitPlayer) {
                         handlePlayerDamage(hitPlayer, data.damage);
                     }
+                }
+            }
+        });
+        socket.on('game_ended_health', () => {
+            // Get current player's health
+            if (window.game && window.game.scene.scenes[0]) {
+                const currentScene = window.game.scene.scenes[0];
+                const currentPlayer = PlayerManager.players.get(socket.id);
+
+                if (currentPlayer) {
+                    // Send player's health to server
+                    socket.emit('player_health_update', {
+                        roomId: gameState.roomId,
+                        playerId: socket.id,
+                        health: currentPlayer.health
+                    });
                 }
             }
         });

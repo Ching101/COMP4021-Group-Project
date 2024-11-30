@@ -3,16 +3,16 @@
     "username": "1",
     "password": "$2b$10$JMitF5J8nNegX705ypEyde/KPLduE7o6E3UY3.M7n7mDXaUtyZwAK",
     "gameRecord": {
-      "wins": 20,
-      "losses": 19
+      "wins": 37,
+      "losses": 22
     }
   },
   "123": {
     "username": "123",
     "password": "$2b$10$OMgOKB.AI6vU5eVLvDxMM.7/a1XdxtvXm8avKIzOpw0wcKX27Yz32",
     "gameRecord": {
-      "wins": 8,
-      "losses": 16
+      "wins": 11,
+      "losses": 33
     }
   },
   "Oscar": {
