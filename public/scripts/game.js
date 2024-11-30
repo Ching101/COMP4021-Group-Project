@@ -2003,9 +2003,6 @@ const createCheatMenu = function () {
             <h3>Developer Tools</h3>
             <div class="cheat-options">
                 <label>
-                    <input type="checkbox" id="godMode"> God Mode
-                </label>
-                <label>
                     <input type="checkbox" id="speedBoost"> Speed Boost
                 </label>
                 <label>
@@ -2019,12 +2016,6 @@ const createCheatMenu = function () {
     `
     document.body.appendChild(menu)
 
-    // Add event listeners for checkboxes
-    document.getElementById("godMode").addEventListener("change", (e) => {
-        activeEffects.godMode = e.target.checked
-        if (e.target.checked) setHealth(1000)
-        else setHealth(originalHealth)
-    })
 
     document.getElementById("speedBoost").addEventListener("change", (e) => {
         activeEffects.speedBoost = e.target.checked
@@ -2205,7 +2196,7 @@ const CheatMode = (function () {
     let originalSpeed = 1
     let originalHealth = 100
     let activeEffects = {
-        godMode: false,
+        fullHeal: false,
         speedBoost: false,
         powerUp: false,
     }
@@ -2218,9 +2209,6 @@ const CheatMode = (function () {
             <div class="cheat-menu-content">
                 <h3>Developer Tools</h3>
                 <div class="cheat-options">
-                    <label>
-                        <input type="checkbox" id="godMode"> God Mode
-                    </label>
                     <label>
                         <input type="checkbox" id="speedBoost"> Speed Boost
                     </label>
@@ -2236,9 +2224,9 @@ const CheatMode = (function () {
         document.body.appendChild(menu)
 
         // Add event listeners for checkboxes
-        document.getElementById("godMode").addEventListener("change", (e) => {
-            activeEffects.godMode = e.target.checked
-            if (e.target.checked) setHealth(1000)
+        document.getElementById("fullHeal").addEventListener("change", (e) => {
+            activeEffects.fullHeal = e.target.checked
+            if (e.target.checked) setHealth(100)
             else setHealth(originalHealth)
         })
 
@@ -2285,19 +2273,24 @@ const CheatMode = (function () {
     }
 
     // Helper functions to be connected with game mechanics
+    // const playerSprite = PlayerManager.players.get(moveData.id)
     const setHealth = function (value) {
         // To be implemented when connecting with game health system
+        // console.log("playerSprite", playerSprite)
         console.log("Health set to:", value)
+        player.health = value
     }
 
     const setSpeed = function (multiplier) {
         // To be implemented when connecting with game movement system
         console.log("Speed multiplier set to:", multiplier)
+        player.speedMultiplier = multiplier
     }
 
     const setDamageMultiplier = function (multiplier) {
         // To be implemented when connecting with game damage system
         console.log("Damage multiplier set to:", multiplier)
+        player.attackMultiplier = multiplier
     }
 
     // Initialize cheat mode key listener
