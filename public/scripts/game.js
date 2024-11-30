@@ -1883,8 +1883,6 @@ function updateActivePowerupsDisplay(scene, powerupConfig) {
 
     const powerupName = powerupConfig.name.toLowerCase()
 
-    const powerupName = powerupConfig.name.toLowerCase();
-
     // Initialize gameState.activePowerups if it doesn't exist
     if (!gameState.activePowerups) {
         gameState.activePowerups = {}
