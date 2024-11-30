@@ -551,6 +551,23 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on('get_leaderboard', (data, callback) => {
+        try {
+            const users = JSON.parse(fs.readFileSync("data/users.json"));
+            
+            const leaderboardData = Object.entries(users).map(([username, userData]) => ({
+                username,
+                wins: userData.gameRecord?.wins || 0,
+                losses: userData.gameRecord?.losses || 0
+            }));
+            
+            callback(leaderboardData);
+        } catch (err) {
+            console.error('Error getting leaderboard data:', err);
+            callback([]);
+        }
+    });
+
 })
 
 // This helper function checks whether the text only contains word characters

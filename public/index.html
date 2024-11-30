@@ -49,6 +49,10 @@
                 Game Instructions
             </button>
 
+            <button id="leaderboard-btn" class="instructions-button">
+                Leaderboard
+            </button>
+
             <div id="instructions-popup" class="popup-overlay">
                 <div class="popup-content">
                     <span class="close-popup">&times;</span>
@@ -127,6 +131,26 @@
                 </div>
             </div>
 
+            <div id="leaderboard-popup" class="popup-overlay">
+                <div class="popup-content">
+                    <span class="close-popup">&times;</span>
+                    <h2>Leaderboard</h2>
+                    <div class="leaderboard-container">
+                        <div class="leaderboard-header">
+                            <span class="rank-col">Rank</span>
+                            <span class="name-col">Player</span>
+                            <span class="stat-col">Games</span>
+                            <span class="stat-col">Win Rate</span>
+                            <span class="stat-col">Wins</span>
+                            <span class="stat-col">Losses</span>
+                        </div>
+                        <div id="leaderboard-entries">
+                            <!-- Entries will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="lobby-buttons">
                 <button id="start-game-btn" class="lobby-button start-button disabled" disabled
                     title="Need at least 2 players to start">
@@ -198,21 +222,6 @@
                 </div>
             </div>
 
-            <div class="rankings-container">
-                <h2>Player Rankings</h2>
-                <div class="rankings-table">
-                    <div class="rankings-header">
-                        <span class="rank">#</span>
-                        <span class="player">Player</span>
-                        <span class="damage">Damage</span>
-                        <span class="powerups">Power-ups</span>
-                        <span class="time">Time</span>
-                    </div>
-                    <div id="rankings-list">
-                        <!-- Rankings will be populated here -->
-                    </div>
-                </div>
-            </div>
 
             <button id="play-again-btn" class="game-over-btn">
                 Play Again

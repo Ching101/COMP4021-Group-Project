@@ -252,9 +252,80 @@ const UI = (function () {
         })
 
         initializeInstructionsPopup()
+        initializeLeaderboard()
     }
 
-    return { getUserDisplay, initialize }
+    // Update the UI.initializeLeaderboard function
+    function updateLeaderboard() {
+        const socket = Socket.getSocket();
+        if (!socket) {
+            console.error('No socket connection available');
+            return;
+        }
+
+        socket.emit('get_leaderboard', {}, (players) => {
+            const leaderboardEntries = $('#leaderboard-entries');
+            leaderboardEntries.empty();
+
+            if (!players || players.length === 0) {
+                leaderboardEntries.html('<div class="leaderboard-entry">No players found</div>');
+                return;
+            }
+
+            // Sort players by win rate
+            players.sort((a, b) => {
+                const winRateA = (a.wins / (a.wins + a.losses)) * 100 || 0;
+                const winRateB = (b.wins / (b.wins + b.losses)) * 100 || 0;
+                return winRateB - winRateA;
+            });
+
+            // Add player entries
+            players.forEach((player, index) => {
+                const totalGames = player.wins + player.losses;
+                const winRate = totalGames > 0 ? ((player.wins / totalGames) * 100).toFixed(1) : '0.0';
+                
+                const entry = $('<div></div>')
+                    .addClass(`leaderboard-entry ${index < 3 ? `top-3 rank-${index + 1}` : ''}`)
+                    .html(`
+                        <span class="rank-col">#${index + 1}</span>
+                        <span class="name-col">${player.username}</span>
+                        <span class="stat-col">${totalGames}</span>
+                        <span class="stat-col">${winRate}%</span>
+                        <span class="stat-col">${player.wins}</span>
+                        <span class="stat-col">${player.losses}</span>
+                    `);
+                
+                leaderboardEntries.append(entry);
+            });
+        });
+    }
+
+    function initializeLeaderboard() {
+        const $leaderboardBtn = $('#leaderboard-btn');
+        const $leaderboardPopup = $('#leaderboard-popup');
+        const $closeBtn = $leaderboardPopup.find('.close-popup');
+
+        // Click handler for the leaderboard button
+        $leaderboardBtn.on('click', () => {
+            // Always fetch fresh data before showing the popup
+            updateLeaderboard();
+            $leaderboardPopup.fadeIn(300);
+        });
+
+        // Click handler for the close button
+        $closeBtn.on('click', () => {
+            $leaderboardPopup.fadeOut(300);
+        });
+
+        // Click handler for clicking outside the popup
+        $(window).on('click', (event) => {
+            if (event.target === $leaderboardPopup[0]) {
+                $leaderboardPopup.fadeOut(300);
+            }
+        });
+    }
+
+    return { getUserDisplay, initialize, initializeLeaderboard }
 })()
 
 const GameRecord = (function () {
