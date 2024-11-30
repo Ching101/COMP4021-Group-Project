@@ -769,6 +769,7 @@ function setupPlayerControls(playerSprite) {
                     currentAnimation = `Player${playerSprite.number}_left_Run_${playerSprite.currentProp}`;
                     playerSprite.direction = 'left';
                     isMoving = true;
+                    playerSprite.playAnimation(currentAnimation);
                 }
             } else if (cursors.right.isDown && !cursors.left.isDown) {
                 // Only set velocity if not attacking
@@ -777,6 +778,7 @@ function setupPlayerControls(playerSprite) {
                     currentAnimation = `Player${playerSprite.number}_right_Run_${playerSprite.currentProp}`;
                     playerSprite.direction = 'right';
                     isMoving = true;
+                    playerSprite.playAnimation(currentAnimation);
                 }
             } else {
                 playerSprite.setVelocityX(0);
@@ -787,6 +789,7 @@ function setupPlayerControls(playerSprite) {
                 playerSprite.setVelocityY(-500);
                 currentAnimation = `Player${playerSprite.number}_${playerSprite.direction}_Jump_${playerSprite.currentProp}`;
                 isMoving = true;
+                playerSprite.playAnimation(currentAnimation);
             }
 
             // Set idle state when not moving
