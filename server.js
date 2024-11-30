@@ -265,6 +265,9 @@ io.on("connection", (socket) => {
                         foundSocket: socketId
                     });
 
+                    // Add each player's socket ID to alivePlayers Set
+                    game.alivePlayers.add(socketId);
+
                     return {
                         id: socketId,
                         username: username,
@@ -447,7 +450,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on('player_animation_frame', (frameData) => {
-        console.log('Animation frame received:', frameData);
+
         const game = activeGames.get(frameData.roomId);
         if (game) {
             // Broadcast animation frames to all other players in the room
@@ -485,11 +488,29 @@ io.on("connection", (socket) => {
     });
 
     socket.on('player_died', (data) => {
+        console.log('Player died event received:', {
+            roomId: data.roomId,
+            playerId: data.playerId
+        });
+
         const game = activeGames.get(data.roomId);
-        if (!game) return;
+        console.log('Game state for death:', {
+            gameExists: !!game,
+            alivePlayers: game?.alivePlayers ? Array.from(game.alivePlayers) : [],
+            alivePlayersCount: game?.alivePlayers?.size
+        });
+
+        if (!game) {
+            console.log('Game not found for player death');
+            return;
+        }
 
         // Remove player from alive players
         game.alivePlayers.delete(data.playerId);
+        console.log('After removing dead player:', {
+            remainingPlayers: Array.from(game.alivePlayers),
+            remainingCount: game.alivePlayers.size
+        });
 
         // Broadcast death to all players
         io.to(data.roomId).emit('player_died', {
@@ -497,6 +518,7 @@ io.on("connection", (socket) => {
         });
 
         // Check if game should end
+        console.log('Checking game end for room:', data.roomId);
         checkGameEnd(data.roomId, io);
     });
 
@@ -517,6 +539,18 @@ io.on("connection", (socket) => {
             }
         }
     });
+
+    socket.on('player_death_animation', (frameData) => {
+
+        const game = activeGames.get(frameData.roomId);
+        if (game) {
+            // Broadcast death animation frames to all other players in the room
+            socket.to(frameData.roomId).emit('player_death_animation', frameData);
+        } else {
+            console.log('Game not found for room:', frameData.roomId);
+        }
+    });
+
 })
 
 // This helper function checks whether the text only contains word characters
@@ -796,11 +830,30 @@ function endGame(roomId, io, reason) {
 
 function checkGameEnd(roomId, io) {
     const game = activeGames.get(roomId);
-    if (!game || !game.active) return;
+    console.log('Checking game end:', {
+        roomId,
+        gameExists: !!game,
+        isActive: game?.active,
+        alivePlayers: game?.alivePlayers ? Array.from(game.alivePlayers) : [],
+        alivePlayersCount: game?.alivePlayers?.size
+    });
 
+    if (!game || !game.active) {
+        console.log('Game not active or not found, skipping end check');
+        return;
+    }
+    if (game.alivePlayers.size === 0) {
+        console.log('No players remaining, ending game');
+        endGame(roomId, io, 'no_players_remaining');
+    }
     // Check if only one player is alive
-    if (game.alivePlayers.size === 1) {
+    else if (game.alivePlayers.size === 1) {
+        console.log('One player remaining, ending game:', {
+            lastPlayer: Array.from(game.alivePlayers)[0]
+        });
         endGame(roomId, io, 'last_player_standing');
+    } else {
+        console.log('Multiple players still alive:', game.alivePlayers.size);
     }
 }
 

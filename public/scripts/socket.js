@@ -131,9 +131,7 @@ const Socket = (function () {
 
         // Update the weapon_spawned handler to use .call() like powerups
         socket.on('weapon_spawned', (weaponData) => {
-            //console.log('Received weapon spawn event:', weaponData);
             if (weaponData.roomId === window.currentRoomId && window.game?.scene?.scenes[0]) {
-                //console.log('Spawning weapon in game');
                 spawnWeapon.call(
                     window.game.scene.scenes[0],
                     weaponData.x,
@@ -141,18 +139,11 @@ const Socket = (function () {
                     weaponData.weaponConfig,
                     weaponData.id
                 );
-            } else {
-                console.log('Skipping weapon spawn:', {
-                    expectedRoom: window.currentRoomId,
-                    receivedRoom: weaponData.roomId,
-                    gameReady: !!window.game?.scene?.scenes[0]
-                });
             }
         });
 
         // Add this after the weapon_spawned handler
         socket.on('weapon_collected', (data) => {
-            //console.log('Weapon collected:', data);
             const weapon = gameState.weapons.get(data.weaponId);
             if (weapon) {
                 // Update the collecting player's prop
@@ -177,21 +168,17 @@ const Socket = (function () {
         });
 
         socket.on('powerup_spawned', (powerupData) => {
-            //console.log('Received powerup spawn event:', powerupData);
-        
+
             // Get the current game scene properly
             const currentScene = window.game?.scene?.scenes[0];
             if (!currentScene || !currentScene.scene.isActive) {
                 console.error('No active game scene found');
                 return;
             }
-        
+
             if (powerupData.roomId === window.currentRoomId) {
-                //console.log('Spawning powerup in game scene:', {
-                //    sceneKey: currentScene.scene.key,
-                //    powerupId: powerupData.id
-                //});
-        
+
+
                 // Wait for next frame to ensure scene is ready
                 currentScene.time.delayedCall(0, () => {
                     const powerupSprite = spawnPowerup.call(
@@ -201,7 +188,7 @@ const Socket = (function () {
                         powerupData.powerupConfig,
                         powerupData.id
                     );
-        
+
                     if (powerupSprite) {
                         // Add collision with all players
                         PlayerManager.players.forEach(playerSprite => {
@@ -219,93 +206,131 @@ const Socket = (function () {
         });
 
         socket.on('powerup_collected', (data) => {
+
+
+            // Get the current game scene
             console.log('Powerup collected event received:', data);
-            
+
             const scene = window.game?.scene?.scenes[0];
-            if (!scene) {
-                console.error('No active scene found for powerup cleanup');
-                return;
-            }
-        
-            // Update the collecting player's effects
-            const playerSprite = PlayerManager.players.get(data.playerId);
-            if (playerSprite) {
-                // Only apply effects if we didn't already handle it locally
-                if (data.playerId !== socket.id) {
-                    applyPowerupEffect(playerSprite, data.powerupType);
-                    showPowerupFeedback(scene, playerSprite, data.powerupType.name, false);
-                } else {
-                    // For the local player
-                    const powerupConfig = {
-                        name: data.powerupType.name.toLowerCase(),
-                        duration: data.powerupType.duration,
-                        multiplier: data.powerupType.multiplier
-                    };
-                    
-                    // Apply the powerup effect
-                    applyPowerupEffect(playerSprite, data.powerupType);
-                    
-                    // Update display for non-health powerups
-                    if (powerupConfig.name !== 'health') {
-                        // Initialize gameState.activePowerups if it doesn't exist
-                        if (!gameState.activePowerups) {
-                            gameState.activePowerups = {};
+            if (!scene) return;
+
+            // Try to find powerup by ID first
+            let powerup = gameState.powerups.get(data.powerupId);
+
+            if (!powerup) {
+                // Try to find by position with increased tolerance
+                for (const [_, p] of gameState.powerups.entries()) {
+                    if (p && p.active) {  // Check if powerup exists and is active
+                        const xDiff = Math.abs(p.x - data.x);
+                        const yDiff = Math.abs(p.y - data.y);
+                        if (xDiff < 20 && yDiff < 20) {
+                            console.log('Found powerup by position match');
+                            powerup = p;
+                            break;
                         }
-                        
-                        // Pass the normalized powerup configuration
-                        updateActivePowerupsDisplay(scene, powerupConfig);
                     }
-                    
-                    showPowerupFeedback(scene, playerSprite, powerupConfig.name, true);
                 }
             }
-        
-            // Clean up powerup sprites
-            const powerupsToClean = scene.children.list.filter(child => 
-                child.texture && 
-                child.texture.key && 
-                child.texture.key.startsWith('powerup_') &&
-                Math.abs(child.x - data.x) < 20 && 
-                Math.abs(child.y - data.y) < 20
-            );
-        
-            powerupsToClean.forEach(powerupSprite => {
-                try {
-                    // Remove from gameState
-                    gameState.powerups.delete(powerupSprite.id);
-                    gameState.powerups.delete(`pos_${Math.floor(powerupSprite.x)}_${Math.floor(powerupSprite.y)}`);
-        
-                    // Disable physics
-                    if (powerupSprite.body) {
-                        powerupSprite.body.enable = false;
+
+            if (powerup && powerup.active) {
+                // Apply powerup effect to the correct player
+                const playerSprite = PlayerManager.players.get(data.playerId);
+                if (playerSprite) {
+                    // Apply effect before cleanup
+                    applyPowerupEffect(playerSprite, data.powerupType);
+
+                    // Show feedback for other players
+                    if (playerSprite !== player) {
+                        showPowerupFeedback(scene, playerSprite, data.powerupType.name, false);
                     }
-        
-                    // Remove colliders
-                    if (scene.physics?.world) {
-                        scene.physics.world.colliders.getActive()
-                            .filter(collider => 
-                                collider.object1 === powerupSprite || 
-                                collider.object2 === powerupSprite
-                            ).forEach(collider => {
-                                collider.destroy();
-                            });
+
+                    // Clean up the powerup
+                    cleanupPowerup(powerup, scene);
+                    if (!scene) {
+                        console.error('No active scene found for powerup cleanup');
+                        return;
                     }
-        
-                    // Destroy the sprite
-                    powerupSprite.destroy(true);
-                    console.log('Powerup cleanup completed:', powerupSprite.id);
-                } catch (error) {
-                    console.error('Error during powerup cleanup:', error);
+
+                    // Update the collecting player's effects
+                    const playerSprite = PlayerManager.players.get(data.playerId);
+                    if (playerSprite) {
+                        // Only apply effects if we didn't already handle it locally
+                        if (data.playerId !== socket.id) {
+                            applyPowerupEffect(playerSprite, data.powerupType);
+                            showPowerupFeedback(scene, playerSprite, data.powerupType.name, false);
+                        } else {
+                            // For the local player
+                            const powerupConfig = {
+                                name: data.powerupType.name.toLowerCase(),
+                                duration: data.powerupType.duration,
+                                multiplier: data.powerupType.multiplier
+                            };
+
+                            // Apply the powerup effect
+                            applyPowerupEffect(playerSprite, data.powerupType);
+
+                            // Update display for non-health powerups
+                            if (powerupConfig.name !== 'health') {
+                                // Initialize gameState.activePowerups if it doesn't exist
+                                if (!gameState.activePowerups) {
+                                    gameState.activePowerups = {};
+                                }
+
+                                // Pass the normalized powerup configuration
+                                updateActivePowerupsDisplay(scene, powerupConfig);
+                            }
+
+                            showPowerupFeedback(scene, playerSprite, powerupConfig.name, true);
+                        }
+                    }
+
+                    // Clean up powerup sprites
+                    const powerupsToClean = scene.children.list.filter(child =>
+                        child.texture &&
+                        child.texture.key &&
+                        child.texture.key.startsWith('powerup_') &&
+                        Math.abs(child.x - data.x) < 20 &&
+                        Math.abs(child.y - data.y) < 20
+                    );
+
+                    powerupsToClean.forEach(powerupSprite => {
+                        try {
+                            // Remove from gameState
+                            gameState.powerups.delete(powerupSprite.id);
+                            gameState.powerups.delete(`pos_${Math.floor(powerupSprite.x)}_${Math.floor(powerupSprite.y)}`);
+
+                            // Disable physics
+                            if (powerupSprite.body) {
+                                powerupSprite.body.enable = false;
+                            }
+
+                            // Remove colliders
+                            if (scene.physics?.world) {
+                                scene.physics.world.colliders.getActive()
+                                    .filter(collider =>
+                                        collider.object1 === powerupSprite ||
+                                        collider.object2 === powerupSprite
+                                    ).forEach(collider => {
+                                        collider.destroy();
+                                    });
+                            }
+
+                            // Destroy the sprite
+                            powerupSprite.destroy(true);
+                            console.log('Powerup cleanup completed:', powerupSprite.id);
+                        } catch (error) {
+                            console.error('Error during powerup cleanup:', error);
+                        }
+                    });
+
+                    if (powerupsToClean.length === 0) {
+                        console.log('No powerups found to clean up at location:', { x: data.x, y: data.y });
+                    }
                 }
-            });
-        
-            if (powerupsToClean.length === 0) {
-                console.log('No powerups found to clean up at location:', {x: data.x, y: data.y});
             }
         });
 
         socket.on('player_attack', (attackData) => {
-            console.log('Received player attack:', attackData);
 
             // Skip if it's our own attack
             if (attackData.id === socket.id) {
@@ -316,7 +341,6 @@ const Socket = (function () {
             if (window.game && window.game.scene.scenes[0]) {
                 const otherPlayer = PlayerManager.players.get(attackData.id);
                 if (otherPlayer) {
-                    console.log('Playing attack animation for player:', attackData.id);
                     // Stop any current movement
                     otherPlayer.setVelocityX(0);
                     // Update player direction first
@@ -334,13 +358,13 @@ const Socket = (function () {
         // Add inside the Socket IIFE, in the connect function
         socket.on('player_damaged', (data) => {
             if (window.game && window.game.scene.scenes[0]) {
-                const scene = window.game.scene.scenes[0];
+                const scene = window.game.scene.scenes[0]
                 const damagedPlayer = PlayerManager.players.get(data.targetId);
-                
+
                 if (damagedPlayer) {
                     // Show damage number
                     showDamageNumber(scene, data.x, data.y, data.damage);
-                    
+
                     // Apply damage to player
                     handlePlayerDamage(damagedPlayer, data.damage);
                 }
@@ -423,7 +447,6 @@ const Socket = (function () {
                 const minutes = Math.floor(data.timeRemaining / 60);
                 const seconds = data.timeRemaining % 60;
                 const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                console.log('Updating timer display:', timeString);
 
                 gameState.timer.element.textContent = timeString;
                 if (data.timeRemaining <= 30) {
@@ -495,6 +518,54 @@ const Socket = (function () {
 
             // Resume stats auto-refresh
             GameStats.startAutoRefresh();
+        });
+
+        // Add this inside the Socket IIFE connect function
+        socket.on('player_animation_frame', (frameData) => {
+            // Skip if it's our own animation
+            if (frameData.id === socket.id) {
+                return;
+            }
+
+            // Handle the animation frame for other players
+            if (window.game && window.game.scene.scenes[0]) {
+                const otherPlayer = PlayerManager.players.get(frameData.id);
+                if (otherPlayer) {
+                    // Set the texture directly for the frame
+                    otherPlayer.setTexture(frameData.frame);
+
+                    // Update direction if needed
+                    otherPlayer.direction = frameData.direction;
+
+                    // If this is a death animation, set death state
+                    if (frameData.animation === 'death') {
+                        otherPlayer.isDead = true;
+                    }
+                }
+            }
+        });
+
+        socket.on('player_death_animation', (frameData) => {
+            // Skip if it's our own animation
+            if (frameData.id === socket.id) {
+                return;
+            }
+
+            // Handle the death animation frame for other players
+            if (window.game && window.game.scene.scenes[0]) {
+                const otherPlayer = PlayerManager.players.get(frameData.id);
+                if (otherPlayer) {
+                    // Set the texture directly for the frame
+                    otherPlayer.setTexture(frameData.frame);
+
+                    // Update direction if needed
+                    otherPlayer.direction = frameData.direction;
+
+                    // Set death state
+                    otherPlayer.isDead = true;
+
+                }
+            }
         });
     }
     const disconnect = function () {
