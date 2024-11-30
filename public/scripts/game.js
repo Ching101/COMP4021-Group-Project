@@ -650,18 +650,18 @@ function create() {
             this.handlePlayerMovement(moveData)
         )
 
-        socket.on("weapon_spawned", (weaponData) => {
-            //console.log('Received weapon spawn:', weaponData);
-            if (weaponData.roomId === gameState.roomId) {
-                spawnWeapon.call(
-                    this,
-                    weaponData.x,
-                    weaponData.y,
-                    weaponData.weaponConfig,
-                    weaponData.id
-                )
-            }
-        })
+        // socket.on("weapon_spawned", (weaponData) => {
+        //     //console.log('Received weapon spawn:', weaponData);
+        //     if (weaponData.roomId === gameState.roomId) {
+        //         spawnWeapon.call(
+        //             this,
+        //             weaponData.x,
+        //             weaponData.y,
+        //             weaponData.weaponConfig,
+        //             weaponData.id
+        //         )
+        //     }
+        // })
 
         socket.on("weapon_collected", (data) => {
             const weapon = gameState.weapons.get(data.weaponId)
@@ -671,18 +671,18 @@ function create() {
             }
         })
 
-        socket.on("powerup_spawned", (powerupData) => {
-            //console.log('Received powerup spawn:', powerupData);
-            if (powerupData.roomId === gameState.roomId) {
-                spawnPowerup.call(
-                    this,
-                    powerupData.x,
-                    powerupData.y,
-                    powerupData.powerupConfig,
-                    powerupData.id
-                )
-            }
-        })
+        // socket.on("powerup_spawned", (powerupData) => {
+        //     //console.log('Received powerup spawn:', powerupData);
+        //     if (powerupData.roomId === gameState.roomId) {
+        //         spawnPowerup.call(
+        //             this,
+        //             powerupData.x,
+        //             powerupData.y,
+        //             powerupData.powerupConfig,
+        //             powerupData.id
+        //         )
+        //     }
+        // })
 
         socket.on("powerup_collected", (data) => {
             // Skip if this is our own collection

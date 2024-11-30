@@ -319,118 +319,118 @@ io.on("connection", (socket) => {
                     players: playerAssignments,
                 })
                 // Start spawn timers
-                game.spawnTimers.weapons = setInterval(() => {
-                    if (game.active) {
-                        const weaponType =
-                            SPAWN_CONFIG.WEAPONS.types[
-                                Math.floor(
-                                    Math.random() *
-                                        SPAWN_CONFIG.WEAPONS.types.length
-                                )
-                            ]
-                        const weaponData = {
-                            roomId,
-                            type: weaponType,
-                            weaponConfig: {
-                                name: weaponType.toLowerCase(),
-                                damage:
-                                    weaponType === "DAGGER"
-                                        ? 15
-                                        : weaponType === "SWORD"
-                                        ? 25
-                                        : 35,
-                                attackSpeed:
-                                    weaponType === "DAGGER"
-                                        ? 200
-                                        : weaponType === "SWORD"
-                                        ? 400
-                                        : 500,
-                                range:
-                                    weaponType === "DAGGER"
-                                        ? 30
-                                        : weaponType === "SWORD"
-                                        ? 50
-                                        : 600,
-                                isThrowable: weaponType === "DAGGER",
-                            },
-                            x: Math.floor(Math.random() * (750 - 50) + 50),
-                            y: Math.floor(Math.random() * (500 - 50) + 50),
-                            id: Date.now(),
-                        }
+                // game.spawnTimers.weapons = setInterval(() => {
+                //     if (game.active) {
+                //         const weaponType =
+                //             SPAWN_CONFIG.WEAPONS.types[
+                //                 Math.floor(
+                //                     Math.random() *
+                //                         SPAWN_CONFIG.WEAPONS.types.length
+                //                 )
+                //             ]
+                //         const weaponData = {
+                //             roomId,
+                //             type: weaponType,
+                //             weaponConfig: {
+                //                 name: weaponType.toLowerCase(),
+                //                 damage:
+                //                     weaponType === "DAGGER"
+                //                         ? 15
+                //                         : weaponType === "SWORD"
+                //                         ? 25
+                //                         : 35,
+                //                 attackSpeed:
+                //                     weaponType === "DAGGER"
+                //                         ? 200
+                //                         : weaponType === "SWORD"
+                //                         ? 400
+                //                         : 500,
+                //                 range:
+                //                     weaponType === "DAGGER"
+                //                         ? 30
+                //                         : weaponType === "SWORD"
+                //                         ? 50
+                //                         : 600,
+                //                 isThrowable: weaponType === "DAGGER",
+                //             },
+                //             x: Math.floor(Math.random() * (750 - 50) + 50),
+                //             y: Math.floor(Math.random() * (500 - 50) + 50),
+                //             id: Date.now(),
+                //         }
 
-                        // Emit to all clients in the room
-                        io.to(roomId).emit("weapon_spawned", weaponData)
-                    }
-                }, SPAWN_CONFIG.WEAPONS.interval)
+                //         // Emit to all clients in the room
+                //         io.to(roomId).emit("weapon_spawned", weaponData)
+                //     }
+                // }, SPAWN_CONFIG.WEAPONS.interval)
 
-                game.spawnTimers.powerups = setInterval(() => {
-                    if (game.active) {
-                        const powerupType =
-                            SPAWN_CONFIG.POWERUPS.types[
-                                Math.floor(
-                                    Math.random() *
-                                        SPAWN_CONFIG.POWERUPS.types.length
-                                )
-                            ]
-                        const powerupData = {
-                            roomId,
-                            type: powerupType,
-                            powerupConfig: {
-                                name: powerupType.toLowerCase(),
-                                effect: powerupType === "HEALTH" ? 20 : 0,
-                                multiplier:
-                                    powerupType === "ATTACK"
-                                        ? 2
-                                        : powerupType === "SPEED"
-                                        ? 1.5
-                                        : 1,
-                                duration:
-                                    powerupType === "ATTACK"
-                                        ? 10000
-                                        : powerupType === "SPEED"
-                                        ? 8000
-                                        : 0,
-                                color:
-                                    powerupType === "HEALTH"
-                                        ? 0xff0000
-                                        : powerupType === "ATTACK"
-                                        ? 0xff6b00
-                                        : 0x00ff00,
-                            },
-                            x: Math.floor(Math.random() * (750 - 50) + 50),
-                            y: 100, // Start higher up to let gravity work
-                            id: `powerup_${Date.now()}_${Math.random()
-                                .toString(36)
-                                .slice(2, 11)}`, // More unique ID using slice instead of substr
-                        }
+                // game.spawnTimers.powerups = setInterval(() => {
+                //     if (game.active) {
+                //         const powerupType =
+                //             SPAWN_CONFIG.POWERUPS.types[
+                //                 Math.floor(
+                //                     Math.random() *
+                //                         SPAWN_CONFIG.POWERUPS.types.length
+                //                 )
+                //             ]
+                //         const powerupData = {
+                //             roomId,
+                //             type: powerupType,
+                //             powerupConfig: {
+                //                 name: powerupType.toLowerCase(),
+                //                 effect: powerupType === "HEALTH" ? 20 : 0,
+                //                 multiplier:
+                //                     powerupType === "ATTACK"
+                //                         ? 2
+                //                         : powerupType === "SPEED"
+                //                         ? 1.5
+                //                         : 1,
+                //                 duration:
+                //                     powerupType === "ATTACK"
+                //                         ? 10000
+                //                         : powerupType === "SPEED"
+                //                         ? 8000
+                //                         : 0,
+                //                 color:
+                //                     powerupType === "HEALTH"
+                //                         ? 0xff0000
+                //                         : powerupType === "ATTACK"
+                //                         ? 0xff6b00
+                //                         : 0x00ff00,
+                //             },
+                //             x: Math.floor(Math.random() * (750 - 50) + 50),
+                //             y: 100, // Start higher up to let gravity work
+                //             id: `powerup_${Date.now()}_${Math.random()
+                //                 .toString(36)
+                //                 .slice(2, 11)}`, // More unique ID using slice instead of substr
+                // //         }
 
-                        //console.log('Spawning powerup:', powerupData);
-                        io.to(roomId).emit("powerup_spawned", powerupData)
-                    }
-                }, SPAWN_CONFIG.POWERUPS.interval)
+                //         //console.log('Spawning powerup:', powerupData);
+                //         // io.to(roomId).emit("powerup_spawned", powerupData)
+                //     }
+                // }, SPAWN_CONFIG.POWERUPS.interval)
             }
         }, 2000)
     })
 
-    socket.on("spawn_weapon", (weaponData) => {
-        console.log("Server received weapon spawn:", weaponData)
-        const game = activeGames.get(weaponData.roomId)
-        if (game) {
-            console.log("Broadcasting weapon to room:", weaponData.roomId)
-            io.to(weaponData.roomId).emit("weapon_spawned", weaponData)
-        } else {
-            console.log("Game not found for room:", weaponData.roomId)
-        }
-    })
+    // socket.on("spawn_weapon", (weaponData) => {
+    //     console.log("Server received weapon spawn:", weaponData)
+    //     const game = activeGames.get(weaponData.roomId)
+    //     if (game) {
+    //         console.log("Broadcasting weapon to room:", weaponData.roomId)
+    //         io.to(weaponData.roomId).emit("weapon_spawned", weaponData)
+    //     } else {
+    //         console.log("Game not found for room:", weaponData.roomId)
+    //     }
+    // })
 
-    socket.on("spawn_powerup", (powerupData) => {
-        console.log("Server received powerup spawn:", powerupData)
-        const game = activeGames.get(powerupData.roomId)
-        if (game) {
-            console.log("Broadcasting powerup to room:", powerupData.roomId)
-            io.to(powerupData.roomId).emit("powerup_spawned", powerupData)
-        }
-    })
+    // socket.on("spawn_powerup", (powerupData) => {
+    //     console.log("Server received powerup spawn:", powerupData)
+    //     const game = activeGames.get(powerupData.roomId)
+    //     if (game) {
+    //         console.log("Broadcasting powerup to room:", powerupData.roomId)
+    //         io.to(powerupData.roomId).emit("powerup_spawned", powerupData)
+    //     }
+    // })
 
     socket.on("join_game", (data) => {
         // Log join attempt
