@@ -11,22 +11,38 @@ $(document).ready(function () {
 
     const musicButton = document.querySelector(".music-button")
 
-    // Start with button in inactive state
-    musicButton.className = "music-button inactive"
+    // Check localStorage for music state
+    const musicEnabled = localStorage.getItem("musicEnabled") === "true"
+    musicButton.className = musicEnabled ? "music-button active" : "music-button inactive"
+
+    // Start playing if music was enabled
+    if (musicEnabled) {
+        sounds.background
+            .play()
+            .catch((error) => console.log("Audio play failed:", error))
+    }
 
     musicButton.addEventListener("click", () => {
         // Toggle button states
         musicButton.classList.toggle("active")
         musicButton.classList.toggle("inactive")
 
+        // Store music state in localStorage
+        localStorage.setItem("musicEnabled", musicButton.classList.contains("active"))
+
         // Toggle music
         if (musicButton.classList.contains("active")) {
-            sounds.background
-                .play()
-                .catch((error) => console.log("Audio play failed:", error))
+            // Determine which music to play based on current game state
+            if ($("#gameContainer").is(":visible")) {
+                window.gameSounds.game.play()
+                    .catch((error) => console.log("Audio play failed:", error))
+            } else {
+                window.gameSounds.background.play()
+                    .catch((error) => console.log("Audio play failed:", error))
+            }
         } else {
             // Stop all sounds when toggling off
-            Object.values(sounds).forEach((sound) => {
+            Object.values(window.gameSounds).forEach((sound) => {
                 sound.pause()
                 sound.currentTime = 0
             })
@@ -75,6 +91,31 @@ $(document).ready(function () {
             window.game.destroy(true)
             window.game = null
         }
+
+        // Get the music button state
+        const musicButton = document.querySelector(".music-button")
+        const isMusicActive = musicButton.classList.contains("active")
+
+        if (isMusicActive) {
+            // Stop the game/victory/defeat music
+            if (window.gameSounds.game) {
+                window.gameSounds.game.pause()
+                window.gameSounds.game.currentTime = 0
+            }
+            if (window.gameSounds.victory) {
+                window.gameSounds.victory.pause()
+                window.gameSounds.victory.currentTime = 0
+            }
+            if (window.gameSounds.defeat) {
+                window.gameSounds.defeat.pause()
+                window.gameSounds.defeat.currentTime = 0
+            }
+
+            // Resume background music
+            window.gameSounds.background.play()
+                .catch(error => console.log("Audio play failed:", error))
+        }
+
         window.location.reload()
     })
 
