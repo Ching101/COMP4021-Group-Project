@@ -196,12 +196,12 @@ const PlayerManager = {
             }
 
             // Stop any movement if this is the local player
-            if (playerSprite === player) {
-                playerSprite.setVelocityX(0)
-            }
+            // if (playerSprite === player) {
+            //     playerSprite.setVelocityX(0)
+            // }
 
             // Store the previous animation state to restore later if needed
-            const previousAnim = playerSprite.currentAnim
+            // const previousAnim = playerSprite.currentAnim
 
             // Clear any existing animation timer
             if (playerSprite.animationTimer) {
@@ -834,48 +834,48 @@ function setupPlayerControls(playerSprite) {
             let isMoving = false
 
             // Don't allow any movement or animation changes during attack
-            if (playerSprite.isAttacking || playerSprite.attackCooldown) {
-                playerSprite.setVelocityX(0)
+            // if (playerSprite.isAttacking || playerSprite.attackCooldown) {
+            //     playerSprite.setVelocityX(0)
 
-                // Important: Emit stopped movement to other players
-                const socket = Socket.getSocket()
-                if (socket) {
-                    socket.emit("player_movement", {
-                        roomId: gameState.roomId,
-                        id: socket.id,
-                        x: playerSprite.x,
-                        y: playerSprite.y,
-                        velocityX: 0,
-                        velocityY: playerSprite.body.velocity.y, // Keep vertical velocity for jumping
-                        direction: playerSprite.direction,
-                        animation: null,
-                        currentProp: playerSprite.currentProp,
-                        isMoving: false,
-                        isAttacking: true, // Add this flag
-                    })
-                }
-                return
-            }
+            //     // Important: Emit stopped movement to other players
+            //     const socket = Socket.getSocket()
+            //     if (socket) {
+            //         socket.emit("player_movement", {
+            //             roomId: gameState.roomId,
+            //             id: socket.id,
+            //             x: playerSprite.x,
+            //             y: playerSprite.y,
+            //             velocityX: 0,
+            //             velocityY: playerSprite.body.velocity.y, // Keep vertical velocity for jumping
+            //             direction: playerSprite.direction,
+            //             animation: null,
+            //             currentProp: playerSprite.currentProp,
+            //             isMoving: false,
+            //             isAttacking: true, // Add this flag
+            //         })
+            //     }
+            //     return
+            // }
 
             // Handle horizontal movement
             if (cursors.left.isDown && !cursors.right.isDown) {
                 // Only set velocity if not attacking
-                if (!playerSprite.isAttacking) {
+                //if (!playerSprite.isAttacking) {
                     playerSprite.setVelocityX(-160 * playerSprite.speedMultiplier);
                     currentAnimation = `Player${playerSprite.number}_left_Run_${playerSprite.currentProp}`;
                     playerSprite.direction = 'left';
                     isMoving = true;
                     playerSprite.playAnimation(currentAnimation);
-                }
+                //}
             } else if (cursors.right.isDown && !cursors.left.isDown) {
                 // Only set velocity if not attacking
-                if (!playerSprite.isAttacking) {
+                //if (!playerSprite.isAttacking) {
                     playerSprite.setVelocityX(160 * playerSprite.speedMultiplier);
                     currentAnimation = `Player${playerSprite.number}_right_Run_${playerSprite.currentProp}`;
                     playerSprite.direction = 'right';
                     isMoving = true;
                     playerSprite.playAnimation(currentAnimation);
-                }
+                //}
             } else {
                 playerSprite.setVelocityX(0)
             }
@@ -883,8 +883,7 @@ function setupPlayerControls(playerSprite) {
             // Handle jumping - also prevent during attack
             if (
                 cursors.up.isDown &&
-                playerSprite.body.touching.down &&
-                !playerSprite.isAttacking
+                playerSprite.body.touching.down //&& !playerSprite.isAttacking
             ) {
                 playerSprite.setVelocityY(-500)
                 currentAnimation = `Player${playerSprite.number}_${playerSprite.direction}_Jump_${playerSprite.currentProp}`
@@ -905,7 +904,7 @@ function setupPlayerControls(playerSprite) {
 
             // Only emit movement if not attacking
             const socket = Socket.getSocket()
-            if (socket && !playerSprite.isAttacking) {
+            if (socket ) { //&& !playerSprite.isAttacking
                 socket.emit("player_movement", {
                     roomId: gameState.roomId,
                     id: socket.id,
