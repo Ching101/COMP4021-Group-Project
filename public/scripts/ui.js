@@ -304,29 +304,48 @@ const UI = (function () {
     }
 
     function initializeLeaderboard() {
-        const $leaderboardBtn = $('#leaderboard-btn');
-        const $leaderboardPopup = $('#leaderboard-popup');
-        const $closeBtn = $leaderboardPopup.find('.close-popup');
+        // First, ensure the leaderboard popup is a direct child of body
+        if ($('#leaderboard-popup').parent().prop('tagName') !== 'BODY') {
+            $('#leaderboard-popup').appendTo('body');
+        }
 
-        // Click handler for the leaderboard button
-        $leaderboardBtn.on('click', () => {
-            // Always fetch fresh data before showing the popup
+        $(document).on('click', '#leaderboard-btn, #leaderboard-btn-2', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Leaderboard button clicked');
+
+            // Force the popup to be visible and above everything
+            const $leaderboardPopup = $('#leaderboard-popup');
+            $leaderboardPopup.css({
+                'display': 'flex',
+                'position': 'fixed',
+                'top': '0',
+                'left': '0',
+                'width': '100%',
+                'height': '100%',
+                'z-index': '9999'  // Very high z-index
+            }).show();
+
             updateLeaderboard();
-            $leaderboardPopup.fadeIn(300);
         });
 
-        // Click handler for the close button
-        $closeBtn.on('click', () => {
-            $leaderboardPopup.fadeOut(300);
+        // Close button handler
+        $(document).on('click', '.close-popup', function() {
+            $('#leaderboard-popup').hide();
         });
 
-        // Click handler for clicking outside the popup
-        $(window).on('click', (event) => {
-            if (event.target === $leaderboardPopup[0]) {
-                $leaderboardPopup.fadeOut(300);
+        // Click outside to close
+        $(document).on('click', '#leaderboard-popup', function(e) {
+            if (e.target === this) {
+                $(this).hide();
             }
         });
     }
+
+    // Make sure this is called after DOM is ready
+    $(document).ready(function() {
+        initializeLeaderboard();
+    });
 
     return { getUserDisplay, initialize, initializeLeaderboard }
 })()

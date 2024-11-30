@@ -1347,8 +1347,7 @@ button {
 
 #leaderboard-popup {
     display: none;  /* Hidden by default */
-
-    
+    z-index: 1001; /* Make sure this is higher than game-over page */
 }
 
 .result-text {
@@ -1410,4 +1409,21 @@ button {
         transform: scale(1);
         color: #f44336;
     }
+}
+
+#leaderboard-btn-2 {
+    /* display: flex; */
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+#leaderboard-btn-2 i {
+    font-size: 20px;
+}
+
+/* If needed, set game-over page z-index */
+#game-over-page {
+    z-index: 1000;
 }
