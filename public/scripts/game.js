@@ -54,7 +54,52 @@ const PlayerManager = {
         // Add update listener to keep name label with player
         scene.events.on("update", () => {
             if (playerSprite.active) {
-                nameLabel.setPosition(playerSprite.x, playerSprite.y - 40) // Increased from -50 to -80
+                nameLabel.setPosition(playerSprite.x, playerSprite.y - 60) // Increased from -50 to -80
+            }
+        })
+
+        // Create health bar graphics
+        const healthBarWidth = 50
+        const healthBarHeight = 6
+        const healthBarPadding = 2
+        const healthBar = scene.add.graphics().setDepth(3)
+
+        // Store health bar reference on player sprite
+        playerSprite.healthBar = healthBar
+
+        // Add health bar update function to the player sprite
+        playerSprite.updateHealthBar = function () {
+            if (!this.healthBar || !this.active) return
+
+            const barX = this.x - healthBarWidth / 2
+            const barY = this.y - 50 // Position above name label
+
+            this.healthBar.clear()
+
+            // Draw background (black)
+            this.healthBar.fillStyle(0x000000, 1)
+            this.healthBar.fillRect(
+                barX,
+                barY,
+                healthBarWidth + healthBarPadding * 2,
+                healthBarHeight + healthBarPadding * 2
+            )
+
+            // Draw health bar (red)
+            this.healthBar.fillStyle(0xff0000, 1)
+            const currentWidth = healthBarWidth * (this.health / 100)
+            this.healthBar.fillRect(
+                barX + healthBarPadding,
+                barY + healthBarPadding,
+                currentWidth,
+                healthBarHeight
+            )
+        }
+
+        // Update health bar position in scene update
+        scene.events.on("update", () => {
+            if (playerSprite.active) {
+                playerSprite.updateHealthBar()
             }
         })
 
@@ -290,9 +335,15 @@ const PlayerManager = {
 
     // Remove a player
     removePlayer: function (playerId) {
-        const player = this.players.get(playerId)
-        if (player) {
-            player.destroy()
+        const playerSprite = this.players.get(playerId)
+        if (playerSprite) {
+            if (playerSprite.healthBar) {
+                playerSprite.healthBar.destroy()
+            }
+            if (playerSprite.nameLabel) {
+                playerSprite.nameLabel.destroy()
+            }
+            playerSprite.destroy()
             this.players.delete(playerId)
         }
     },
@@ -886,17 +937,21 @@ function handlePlayerUpdate(moveData) {
     const otherPlayer = PlayerManager.players.get(moveData.id)
     if (!otherPlayer) return
 
-    // Update position
+    // Update position and movement
     otherPlayer.x = moveData.x
     otherPlayer.y = moveData.y
     otherPlayer.setVelocityX(moveData.velocityX)
     otherPlayer.setVelocityY(moveData.velocityY)
     otherPlayer.direction = moveData.direction
 
-    // Handle animation state
-    if (moveData.isMoving && moveData.animation) {
-        if (otherPlayer.currentAnim !== moveData.animation) {
-            otherPlayer.playAnimation(moveData.animation)
+    // Update health if provided
+    if (
+        moveData.health !== undefined &&
+        otherPlayer.health !== moveData.health
+    ) {
+        otherPlayer.health = moveData.health
+        if (otherPlayer.updateHealthBar) {
+            otherPlayer.updateHealthBar()
         }
     } else {
         // Stop animation and set idle texture when not moving
@@ -1364,7 +1419,7 @@ function applyPowerupEffect(playerSprite, powerupConfig) {
                     100,
                     playerSprite.health + powerupConfig.effect
                 )
-                updateHealthBar()
+                playerSprite.updateHealthBar()
             }
             break
 
@@ -1604,16 +1659,16 @@ function handlePlayerDamage(playerSprite, damage) {
     playerSprite.health = Math.max(0, playerSprite.health - damage);
 
 
-    // If this is the local player, update health bar
-    if (playerSprite === player) {
-        updateHealthBar()
+    // Update the player's health bar
+    if (playerSprite.updateHealthBar) {
+        playerSprite.updateHealthBar()
     }
 
     // Add brief invulnerability
     playerSprite.isInvulnerable = true
     setTimeout(() => {
         playerSprite.isInvulnerable = false
-    }, 500) // 500ms invulnerability
+    }, 500)
 
     // Play hurt animation
     const hurtAnim = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}`
