@@ -216,9 +216,25 @@ const PlayerManager = {
                     isAnimationActive = false;
                     playerSprite.isAttacking = false;
                     
-                    // Return to idle state
-                    const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`;
-                    playerSprite.setTexture(idleTexture);
+                    // Check if player is still trying to move
+                    const cursors = scene.input.keyboard.createCursorKeys();
+                    if (playerSprite === player) { // Only for local player
+                        if (cursors.left.isDown || cursors.right.isDown) {
+                            // Determine direction and play run animation
+                            const direction = cursors.left.isDown ? 'left' : 'right';
+                            playerSprite.direction = direction;
+                            const runAnimation = `Player${playerSprite.number}_${direction}_Run_${playerSprite.currentProp}`;
+                            playerSprite.playAnimation(runAnimation);
+                        } else {
+                            // If not moving, return to idle state
+                            const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`;
+                            playerSprite.setTexture(idleTexture);
+                        }
+                    } else {
+                        // For other players, return to idle state (movement will be handled by network updates)
+                        const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`;
+                        playerSprite.setTexture(idleTexture);
+                    }
                     
                     // Handle cooldown
                     scene.time.delayedCall(weaponConfig.attackSpeed, () => {
@@ -726,57 +742,45 @@ function setupPlayerControls(playerSprite) {
             let currentAnimation = null;
             let isMoving = false;
     
-            // Don't allow any movement or animation changes during attack
-            if (playerSprite.isAttacking || playerSprite.attackCooldown) {
-                playerSprite.setVelocityX(0);
-                
-                // Important: Emit stopped movement to other players
-                const socket = Socket.getSocket();
-                if (socket) {
-                    socket.emit("player_movement", {
-                        roomId: gameState.roomId,
-                        id: socket.id,
-                        x: playerSprite.x,
-                        y: playerSprite.y,
-                        velocityX: 0,
-                        velocityY: playerSprite.body.velocity.y, // Keep vertical velocity for jumping
-                        direction: playerSprite.direction,
-                        animation: null,
-                        currentProp: playerSprite.currentProp,
-                        isMoving: false,
-                        isAttacking: true // Add this flag
-                    });
-                }
-                return;
-            }
-    
             // Handle horizontal movement
             if (cursors.left.isDown && !cursors.right.isDown) {
-                playerSprite.setVelocityX(-160);
-                currentAnimation = `Player${playerSprite.number}_left_Run_${playerSprite.currentProp}`;
-                playerSprite.direction = 'left';
-                isMoving = true;
+                // Only set velocity if not attacking
+                if (!playerSprite.isAttacking) {
+                    playerSprite.setVelocityX(-160);
+                    currentAnimation = `Player${playerSprite.number}_left_Run_${playerSprite.currentProp}`;
+                    playerSprite.direction = 'left';
+                    isMoving = true;
+                }
             } else if (cursors.right.isDown && !cursors.left.isDown) {
-                playerSprite.setVelocityX(160);
-                currentAnimation = `Player${playerSprite.number}_right_Run_${playerSprite.currentProp}`;
-                playerSprite.direction = 'right';
-                isMoving = true;
+                // Only set velocity if not attacking
+                if (!playerSprite.isAttacking) {
+                    playerSprite.setVelocityX(160);
+                    currentAnimation = `Player${playerSprite.number}_right_Run_${playerSprite.currentProp}`;
+                    playerSprite.direction = 'right';
+                    isMoving = true;
+                }
             } else {
                 playerSprite.setVelocityX(0);
-                if (playerSprite.anims.currentAnim && playerSprite.anims.currentAnim.key.includes('Run')) {
-                    playerSprite.anims.stop();
-                }
             }
     
             // Handle jumping - also prevent during attack
-            if (cursors.up.isDown && playerSprite.body.touching.down) {
+            if (cursors.up.isDown && playerSprite.body.touching.down && !playerSprite.isAttacking) {
                 playerSprite.setVelocityY(-500);
                 currentAnimation = `Player${playerSprite.number}_${playerSprite.direction}_Jump_${playerSprite.currentProp}`;
                 isMoving = true;
             }
     
-            // Set idle state when not moving
-            if (!isMoving) {
+            // Handle animations
+            if (playerSprite.isAttacking) {
+                // Don't change animation during attack
+                return;
+            } else if (isMoving) {
+                // Play movement animation
+                if (currentAnimation && (playerSprite.currentAnim !== currentAnimation || !playerSprite.animationTimer)) {
+                    playerSprite.playAnimation(currentAnimation);
+                }
+            } else {
+                // Set idle state when not moving
                 if (playerSprite.animationTimer) {
                     playerSprite.animationTimer.destroy();
                     playerSprite.animationTimer = null;
@@ -784,8 +788,6 @@ function setupPlayerControls(playerSprite) {
                 playerSprite.currentAnim = null;
                 const idleTexture = `Player${playerSprite.number}_${playerSprite.direction}_Hurt_${playerSprite.currentProp}_3`;
                 playerSprite.setTexture(idleTexture);
-            } else if (currentAnimation && (playerSprite.currentAnim !== currentAnimation || !playerSprite.animationTimer)) {
-                playerSprite.playAnimation(currentAnimation);
             }
     
             // Only emit movement if not attacking
@@ -805,7 +807,7 @@ function setupPlayerControls(playerSprite) {
                 });
             }
         },
-        loop: true,
+        loop: true
     });
 
 

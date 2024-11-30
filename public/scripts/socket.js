@@ -254,16 +254,16 @@ const Socket = (function () {
         socket.on('player_attack', (attackData) => {
             console.log('Received player attack:', attackData);
             
-            // Skip if it's our own attack
             if (attackData.id === socket.id) {
                 return;
             }
         
-            // Handle the attack animation for other players
             if (window.game && window.game.scene.scenes[0]) {
                 const otherPlayer = PlayerManager.players.get(attackData.id);
                 if (otherPlayer) {
                     console.log('Playing attack animation for player:', attackData.id);
+                    // Stop any current movement
+                    otherPlayer.setVelocityX(0);
                     // Update player direction first
                     otherPlayer.direction = attackData.direction;
                     // Play the attack animation
@@ -272,8 +272,6 @@ const Socket = (function () {
                         otherPlayer, 
                         attackData.weaponType
                     );
-                } else {
-                    console.log('Player not found for attack:', attackData.id);
                 }
             }
         });
@@ -299,9 +297,8 @@ const Socket = (function () {
             if (window.game && window.game.scene.scenes[0]) {
                 const otherPlayer = PlayerManager.players.get(moveData.id);
                 if (otherPlayer) {
-                    // If player is attacking, don't allow movement
+                    // If player is attacking, ignore movement updates completely
                     if (otherPlayer.isAttacking || otherPlayer.attackCooldown) {
-                        otherPlayer.setVelocityX(0);
                         return;
                     }
         
