@@ -1,0 +1,54 @@
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #333;
+}
+
+#gameCanvas {
+    border: 2px solid white;
+    background-color: #222;
+}
+
+#health {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+}
+
+#devPanel {
+    z-index: 1000;
+}
+
+#devPanel button {
+    display: block;
+    margin: 5px 0;
+    padding: 5px;
+    background: #444;
+    border: 1px solid #666;
+    color: white;
+    cursor: pointer;
+}
+
+#matchTimer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+}
+
+#stats {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    color: white;
+    font-family: Arial, sans-serif;
+}
